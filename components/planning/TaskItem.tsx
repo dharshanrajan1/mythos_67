@@ -3,14 +3,14 @@ import { Trash, CheckCircle2, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-interface MobileTaskItemProps {
+interface TaskItemProps {
     task: Task
     onDelete: (id: string) => void
     onStatusChange: (id: string, status: string) => void
     onUpdateDay: (id: string, day: string) => void
 }
 
-export function MobileTaskItem({ task, onDelete, onStatusChange, onUpdateDay }: MobileTaskItemProps) {
+export function TaskItem({ task, onDelete, onStatusChange, onUpdateDay }: TaskItemProps) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
     return (

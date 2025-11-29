@@ -1,15 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragOverEvent, DragEndEvent } from "@dnd-kit/core"
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash, FileDown, Eraser, CheckCircle2, Calendar } from "lucide-react"
-import { KanbanColumn } from "./KanbanColumn"
-import { KanbanCard } from "./KanbanCard"
-import { MobileTaskItem } from "./MobileTaskItem"
+import { TaskItem } from "./TaskItem"
 import { jsPDF } from "jspdf"
 import html2canvas from "html2canvas"
 
@@ -22,20 +18,8 @@ export interface Task {
 
 export function KanbanBoard() {
     const [tasks, setTasks] = useState<Task[]>([])
-    const [activeId, setActiveId] = useState<string | null>(null)
     const [newTask, setNewTask] = useState("")
     const [selectedDay, setSelectedDay] = useState("Monday")
-
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 8, // Small movement required to start drag
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    )
 
     const [error, setError] = useState("")
 
@@ -163,36 +147,10 @@ export function KanbanBoard() {
         }
     }
 
-    function handleDragStart(event: DragStartEvent) {
-        setActiveId(event.active.id as string)
-    }
-
-    function handleDragEnd(event: DragEndEvent) {
-        const { active, over } = event
-
-        if (!over) return
-
-        const activeId = active.id as string
-        const overId = over.id as string
-
-        // Columns are now Days: Monday, Tuesday, etc.
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-        if (days.includes(overId)) {
-            const task = tasks.find(t => t.id === activeId)
-            if (task && task.day !== overId) {
-                setTasks(tasks.map(t => t.id === activeId ? { ...t, day: overId } : t))
-                updateTaskDay(activeId, overId)
-            }
-        }
-
-        setActiveId(null)
-    }
-
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
     return (
-        <div className="space-y-4 h-full flex flex-col">
+        <div className="space-y-8 h-full flex flex-col max-w-3xl mx-auto w-full pb-20">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <form onSubmit={addTask} className="flex gap-2 w-full md:w-auto">
                     <Select value={selectedDay} onValueChange={setSelectedDay}>
@@ -214,7 +172,7 @@ export function KanbanBoard() {
                     <Button type="submit"><Plus className="h-4 w-4" /></Button>
                 </form>
                 <div className="flex gap-2 w-full md:w-auto justify-end">
-                    <Button variant="outline" onClick={clearWeek} title="Clear Week" className="hidden md:flex">
+                    <Button variant="outline" onClick={clearWeek} title="Clear Week">
                         <Eraser className="h-4 w-4 mr-2" /> <span className="hidden md:inline">Clear Week</span>
                     </Button>
                     <Button variant="outline" onClick={exportPDF} disabled={isExporting} title="Export PDF">
@@ -224,32 +182,8 @@ export function KanbanBoard() {
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            {/* Desktop View: Kanban Board */}
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-            >
-                <div id="kanban-board" className="hidden md:flex gap-4 h-full overflow-x-auto pb-4">
-                    {days.map(day => (
-                        <KanbanColumn
-                            key={day}
-                            id={day}
-                            title={day}
-                            tasks={tasks.filter(t => t.day === day)}
-                            onDeleteTask={deleteTask}
-                            onStatusChange={updateTaskStatus}
-                        />
-                    ))}
-                </div>
-                <DragOverlay>
-                    {activeId ? <KanbanCard task={tasks.find(t => t.id === activeId)!} onDelete={() => { }} onStatusChange={() => { }} /> : null}
-                </DragOverlay>
-            </DndContext>
-
-            {/* Mobile View: Todoist Style List */}
-            <div className="md:hidden space-y-8 pb-20">
+            {/* Unified Vertical List View */}
+            <div id="kanban-board" className="space-y-8">
                 {days.map(day => {
                     const dayTasks = tasks.filter(t => t.day === day)
 
@@ -264,7 +198,7 @@ export function KanbanBoard() {
                                     <p className="text-xs text-muted-foreground italic pl-2">No tasks</p>
                                 )}
                                 {dayTasks.map(task => (
-                                    <MobileTaskItem
+                                    <TaskItem
                                         key={task.id}
                                         task={task}
                                         onDelete={deleteTask}
