@@ -205,7 +205,7 @@ export function KanbanBoard() {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <div id="kanban-board" className="flex gap-4 h-full overflow-x-auto pb-4">
+                <div id="kanban-board" className="flex gap-4 h-full overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
                     {days.map(day => (
                         <KanbanColumn
                             key={day}

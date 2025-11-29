@@ -26,7 +26,7 @@ export default function RootLayout({
           <div className="min-h-screen bg-background text-white selection:bg-primary/30 relative">
             <BackgroundBlobs />
             <Navbar />
-            <main className="pt-20 px-6 max-w-7xl mx-auto h-full min-h-screen">
+            <main className="pt-20 px-4 md:px-6 max-w-7xl mx-auto h-full min-h-screen">
               {children}
             </main>
           </div>
