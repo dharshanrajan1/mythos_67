@@ -5,7 +5,7 @@ import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor,
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Trash, FileDown, Eraser } from "lucide-react"
+import { Plus, Trash, FileDown, Eraser, CheckCircle2 } from "lucide-react"
 import { KanbanColumn } from "./KanbanColumn"
 import { KanbanCard } from "./KanbanCard"
 import { jsPDF } from "jspdf"
@@ -199,13 +199,14 @@ export function KanbanBoard() {
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
 
+            {/* Desktop View: Kanban Board */}
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
-                <div id="kanban-board" className="flex gap-4 h-full overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+                <div id="kanban-board" className="hidden md:flex gap-4 h-full overflow-x-auto pb-4">
                     {days.map(day => (
                         <KanbanColumn
                             key={day}
@@ -221,6 +222,49 @@ export function KanbanBoard() {
                     {activeId ? <KanbanCard task={tasks.find(t => t.id === activeId)!} onDelete={() => { }} onStatusChange={() => { }} /> : null}
                 </DragOverlay>
             </DndContext>
+
+            {/* Mobile View: Todoist Style List */}
+            <div className="md:hidden space-y-8 pb-20">
+                {days.map(day => {
+                    const dayTasks = tasks.filter(t => t.day === day)
+                    if (dayTasks.length === 0) return null // Optional: Hide empty days or keep them
+
+                    return (
+                        <div key={day} className="space-y-3">
+                            <h3 className="font-semibold text-lg text-primary/80 border-b border-white/10 pb-1">{day}</h3>
+                            <div className="space-y-2">
+                                {dayTasks.map(task => (
+                                    <div key={task.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                                        <button
+                                            onClick={() => updateTaskStatus(task.id, task.status === 'COMPLETED' ? 'NOT_STARTED' : 'COMPLETED')}
+                                            className={`h-5 w-5 rounded-full border flex items-center justify-center transition-colors ${task.status === 'COMPLETED'
+                                                ? 'bg-green-500 border-green-500 text-black'
+                                                : 'border-zinc-500 hover:border-white'
+                                                }`}
+                                        >
+                                            {task.status === 'COMPLETED' && <CheckCircle2 className="h-3 w-3" />}
+                                        </button>
+                                        <span className={`flex-1 text-sm ${task.status === 'COMPLETED' ? 'text-muted-foreground line-through' : 'text-white'}`}>
+                                            {task.content}
+                                        </span>
+                                        <button
+                                            onClick={() => deleteTask(task.id)}
+                                            className="text-zinc-500 hover:text-red-400 p-1"
+                                        >
+                                            <Trash className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                })}
+                {tasks.length === 0 && (
+                    <div className="text-center text-muted-foreground py-10">
+                        No tasks yet. Add one above!
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
