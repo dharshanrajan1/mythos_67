@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Upload } from "lucide-react"
+import { Upload, Trash } from "lucide-react"
 
 interface Photo {
     id: string
@@ -84,13 +84,29 @@ export function ProgressGallery() {
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {photos.map((photo) => (
-                    <Card key={photo.id} className="overflow-hidden">
+                    <Card key={photo.id} className="overflow-hidden group relative">
                         <div className="aspect-square relative">
                             <img
                                 src={photo.url}
                                 alt={photo.caption || "Progress photo"}
                                 className="object-cover w-full h-full"
                             />
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={async () => {
+                                    if (!confirm("Delete this photo?")) return
+                                    try {
+                                        const res = await fetch(`/api/upload?id=${photo.id}`, { method: "DELETE" })
+                                        if (res.ok) fetchPhotos()
+                                    } catch (e) {
+                                        console.error("Failed to delete", e)
+                                    }
+                                }}
+                            >
+                                <Trash className="h-4 w-4" />
+                            </Button>
                         </div>
                         {photo.caption && (
                             <CardContent className="p-2">

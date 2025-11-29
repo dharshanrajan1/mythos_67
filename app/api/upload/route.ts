@@ -64,3 +64,41 @@ export async function GET(req: Request) {
         return new NextResponse("Internal Error", { status: 500 })
     }
 }
+
+export async function DELETE(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session) return new NextResponse("Unauthorized", { status: 401 })
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get("id")
+
+    if (!id) return new NextResponse("ID required", { status: 400 })
+
+    try {
+        const photo = await prisma.progressPhoto.findUnique({
+            where: { id, userId: session.user.id }
+        })
+
+        if (!photo) return new NextResponse("Not found", { status: 404 })
+
+        // Delete from DB
+        await prisma.progressPhoto.delete({
+            where: { id }
+        })
+
+        // Try to delete file
+        try {
+            const fs = require('fs')
+            const filePath = path.join(process.cwd(), "public", photo.url)
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath)
+            }
+        } catch (e) {
+            console.error("Failed to delete file", e)
+        }
+
+        return new NextResponse("Deleted", { status: 200 })
+    } catch (error) {
+        return new NextResponse("Internal Error", { status: 500 })
+    }
+}

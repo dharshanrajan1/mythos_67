@@ -4,12 +4,13 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Activity, PenLine, Plus, Scale, StickyNote } from "lucide-react"
+import { Activity, PenLine, Plus, Scale, StickyNote, CheckCircle2 } from "lucide-react"
 import { Clock } from "@/components/Clock"
 import { Greeting } from "@/components/Greeting"
 import { prisma } from "@/lib/prisma"
 import { format } from "date-fns"
 import { TaskWidget } from "@/components/home/TaskWidget"
+import { RecentActivityList } from "@/components/home/RecentActivityList"
 
 export default async function Home() {
   const session = await getServerSession(authOptions)
@@ -26,15 +27,19 @@ export default async function Home() {
     }
   })
 
+  const completedTasks = await prisma.task.findMany({
+    where: {
+      userId: session.user.id,
+      status: "COMPLETED"
+    },
+    orderBy: {
+      updatedAt: 'desc'
+    },
+    take: 5
+  })
+
   return (
     <div className="relative min-h-full flex flex-col justify-center py-8 overflow-hidden">
-      {/* Background Animation */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob"></div>
-        <div className="absolute top-0 -right-4 w-96 h-96 bg-violet-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-indigo-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
-      </div>
-
       <div className="w-full space-y-12">
         {/* Hero Section */}
         <div className="space-y-4 text-center md:text-left">
@@ -90,9 +95,7 @@ export default async function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">
-                No recent activity to show.
-              </div>
+              <RecentActivityList tasks={completedTasks} />
             </CardContent>
           </Card>
 

@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -27,6 +27,7 @@ model User {
   progressPhotos ProgressPhoto[]
   noteBlocks    NoteBlock[]
   tasks         Task[]
+  workoutLogs   WorkoutLog[]
 }
 
 model Account {
@@ -114,4 +115,13 @@ model Task {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WorkoutLog {
+  id        String   @id @default(cuid())
+  date      DateTime
+  workout   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

@@ -15,9 +15,9 @@ interface KanbanCardProps {
 }
 
 const statusColors: Record<string, string> = {
-    "NOT_STARTED": "bg-card border-l-4 border-l-red-500 border-y border-r border-white/5 hover:border-r-red-500/50 hover:border-y-red-500/50",
-    "IN_PROGRESS": "bg-card border-l-4 border-l-yellow-500 border-y border-r border-white/5 hover:border-r-yellow-500/50 hover:border-y-yellow-500/50",
-    "COMPLETED": "bg-card border-l-4 border-l-green-500 border-y border-r border-white/5 hover:border-r-green-500/50 hover:border-y-green-500/50",
+    "NOT_STARTED": "bg-red-600 text-white border-l-4 border-l-red-800 border-y border-r border-red-700 hover:border-r-red-500 hover:border-y-red-500",
+    "IN_PROGRESS": "bg-yellow-400 text-black border-l-4 border-l-yellow-600 border-y border-r border-yellow-500 hover:border-r-yellow-300 hover:border-y-yellow-300",
+    "COMPLETED": "bg-green-600 text-white border-l-4 border-l-green-800 border-y border-r border-green-700 hover:border-r-green-500 hover:border-y-green-500",
 }
 
 export function KanbanCard({ task, onDelete, onStatusChange }: KanbanCardProps) {

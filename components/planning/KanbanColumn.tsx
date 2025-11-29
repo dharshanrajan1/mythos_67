@@ -19,10 +19,10 @@ export function KanbanColumn({ id, title, tasks, onDeleteTask, onStatusChange }:
     })
 
     return (
-        <Card className="h-full flex flex-col min-w-[250px]" style={{ backgroundColor: '#f4f4f5' }}>
+        <Card className="h-full flex flex-col min-w-[250px] bg-secondary/30 border-white/5 backdrop-blur-sm">
             <CardHeader className="p-4">
-                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                    {title} <span className="ml-2 px-2 py-0.5 rounded-full text-xs text-foreground" style={{ backgroundColor: '#e4e4e7' }}>{tasks.length}</span>
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    {title} <span className="px-2 py-0.5 rounded-full text-xs bg-background/50 text-foreground">{tasks.length}</span>
                 </CardTitle>
             </CardHeader>
             <CardContent ref={setNodeRef} className="flex-1 p-2 space-y-2 overflow-y-auto">

@@ -12,6 +12,8 @@ export const metadata: Metadata = {
 
 import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
 
+import { BackgroundBlobs } from "@/components/ui/BackgroundBlobs";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,7 +23,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <NextAuthProvider>
-          <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-primary/30">
+          <div className="min-h-screen bg-background text-white selection:bg-primary/30 relative">
+            <BackgroundBlobs />
             <Navbar />
             <main className="pt-20 px-6 max-w-7xl mx-auto h-full min-h-screen">
               {children}
