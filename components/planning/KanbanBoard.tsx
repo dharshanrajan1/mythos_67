@@ -78,14 +78,22 @@ export function KanbanBoard() {
     }
 
     const updateTaskDay = async (id: string, day: string) => {
+        // Optimistic update
+        const previousTasks = [...tasks]
+        setTasks(tasks.map(t => t.id === id ? { ...t, day } : t))
+
         try {
-            await fetch("/api/planning", {
+            const res = await fetch("/api/planning", {
                 method: "PUT",
                 body: JSON.stringify({ id, day }),
                 headers: { "Content-Type": "application/json" },
             })
+            if (!res.ok) {
+                throw new Error("Failed to update")
+            }
         } catch (error) {
             console.error("Failed to update task day", error)
+            setTasks(previousTasks) // Revert on error
         }
     }
 
