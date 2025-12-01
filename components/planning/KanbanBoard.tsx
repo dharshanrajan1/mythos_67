@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash, FileDown, Eraser, CheckCircle2, Calendar } from "lucide-react"
 import { TaskItem } from "./TaskItem"
 import { KanbanCard } from "./KanbanCard"
+import { KanbanColumn } from "./KanbanColumn"
 import { jsPDF } from "jspdf"
 import html2canvas from "html2canvas"
 
@@ -249,34 +250,14 @@ export function KanbanBoard() {
 
                         return (
                             <div key={day} className="space-y-3">
-                                <h3 className="font-semibold text-lg text-primary/80 border-b border-white/10 pb-1 flex items-center justify-between">
-                                    {day}
-                                    <span className="text-xs text-muted-foreground font-normal">{dayTasks.length} tasks</span>
-                                </h3>
-
                                 {/* Desktop: Draggable Sortable List */}
                                 <div className="hidden md:block">
-                                    <SortableContext
-                                        id={day} // Use day as container ID
-                                        items={dayTasks.map(t => t.id)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        <div className="space-y-2 min-h-[10px]" data-day={day}>
-                                            {dayTasks.length === 0 && (
-                                                <div className="h-16 border-2 border-dashed border-white/5 rounded-lg flex items-center justify-center text-xs text-muted-foreground">
-                                                    Drop tasks here
-                                                </div>
-                                            )}
-                                            {dayTasks.map(task => (
-                                                <KanbanCard
-                                                    key={task.id}
-                                                    task={task}
-                                                    onDelete={deleteTask}
-                                                    onStatusChange={updateTaskStatus}
-                                                />
-                                            ))}
-                                        </div>
-                                    </SortableContext>
+                                    <KanbanColumn
+                                        day={day}
+                                        tasks={dayTasks}
+                                        onDelete={deleteTask}
+                                        onStatusChange={updateTaskStatus}
+                                    />
                                 </div>
 
                                 {/* Mobile: Simple List (No Drag) */}
@@ -301,7 +282,7 @@ export function KanbanBoard() {
                 <DragOverlay>
                     {activeId ? <KanbanCard task={tasks.find(t => t.id === activeId)!} onDelete={() => { }} onStatusChange={() => { }} /> : null}
                 </DragOverlay>
-            </DndContext>
-        </div>
+            </DndContext >
+        </div >
     )
 }
