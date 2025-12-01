@@ -11,9 +11,10 @@ interface KanbanColumnProps {
     tasks: Task[]
     onDelete: (id: string) => void
     onStatusChange: (id: string, status: string) => void
+    onNotesChange: (id: string, notes: string) => void
 }
 
-export function KanbanColumn({ day, tasks, onDelete, onStatusChange }: KanbanColumnProps) {
+export function KanbanColumn({ day, tasks, onDelete, onStatusChange, onNotesChange }: KanbanColumnProps) {
     const { setNodeRef } = useDroppable({
         id: day,
     })
@@ -42,6 +43,7 @@ export function KanbanColumn({ day, tasks, onDelete, onStatusChange }: KanbanCol
                             task={task}
                             onDelete={onDelete}
                             onStatusChange={onStatusChange}
+                            onNotesChange={onNotesChange}
                         />
                     ))}
                 </SortableContext>

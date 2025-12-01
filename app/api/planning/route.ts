@@ -24,13 +24,14 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { content, status, day } = body
+        const { content, status, day, notes } = body
 
         const task = await prisma.task.create({
             data: {
                 content,
                 status: status || "NOT_STARTED",
                 day: day || "Monday",
+                notes: notes || "",
                 userId: session.user.id,
             },
         })
@@ -46,13 +47,14 @@ export async function PUT(req: Request) {
 
     try {
         const body = await req.json()
-        const { id, status, day } = body
+        const { id, status, day, notes } = body
 
         const task = await prisma.task.update({
             where: { id, userId: session.user.id },
             data: {
                 ...(status && { status }),
-                ...(day && { day })
+                ...(day && { day }),
+                ...(notes !== undefined && { notes })
             },
         })
         return NextResponse.json(task)

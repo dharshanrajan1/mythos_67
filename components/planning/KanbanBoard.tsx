@@ -18,6 +18,7 @@ export interface Task {
     content: string
     status: string
     day: string
+    notes?: string
 }
 
 export function KanbanBoard() {
@@ -96,6 +97,21 @@ export function KanbanBoard() {
             })
         } catch (error) {
             console.error("Failed to update task status", error)
+            fetchTasks() // Revert on error
+        }
+    }
+
+    const updateTaskNotes = async (id: string, notes: string) => {
+        // Optimistic update
+        setTasks(tasks.map(t => t.id === id ? { ...t, notes } : t))
+        try {
+            await fetch("/api/planning", {
+                method: "PUT",
+                body: JSON.stringify({ id, notes }),
+                headers: { "Content-Type": "application/json" },
+            })
+        } catch (error) {
+            console.error("Failed to update task notes", error)
             fetchTasks() // Revert on error
         }
     }
@@ -197,6 +213,11 @@ export function KanbanBoard() {
             if (task && task.day !== targetDay) {
                 setTasks(tasks.map(t => t.id === activeId ? { ...t, day: targetDay } : t))
                 updateTaskDay(activeId, targetDay)
+            } else if (task && task.day === targetDay && activeId !== overId) {
+                // Reordering within the same day
+                const oldIndex = tasks.findIndex(t => t.id === activeId)
+                const newIndex = tasks.findIndex(t => t.id === overId)
+                setTasks((items) => arrayMove(items, oldIndex, newIndex))
             }
         }
 
@@ -257,6 +278,7 @@ export function KanbanBoard() {
                                         tasks={dayTasks}
                                         onDelete={deleteTask}
                                         onStatusChange={updateTaskStatus}
+                                        onNotesChange={updateTaskNotes}
                                     />
                                 </div>
 
