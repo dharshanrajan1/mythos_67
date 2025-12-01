@@ -69,7 +69,12 @@ export function KanbanCard({ task, onDelete, onStatusChange, onNotesChange }: Ka
                 )}
             >
                 {/* Front Side */}
-                <div className="absolute w-full h-full backface-hidden">
+                <div
+                    className={cn(
+                        "absolute w-full h-full backface-hidden",
+                        !isFlipped ? "z-10" : "z-0"
+                    )}
+                >
                     <Card
                         className={cn(
                             "bg-secondary/30 border-white/5 backdrop-blur-sm hover:bg-secondary/50 transition-colors h-full",
@@ -129,7 +134,12 @@ export function KanbanCard({ task, onDelete, onStatusChange, onNotesChange }: Ka
                 </div>
 
                 {/* Back Side (Notes) */}
-                <div className="absolute w-full h-full backface-hidden rotate-y-180">
+                <div
+                    className={cn(
+                        "absolute w-full h-full backface-hidden rotate-y-180",
+                        isFlipped ? "z-10" : "z-0"
+                    )}
+                >
                     <Card className="bg-secondary/30 border-white/5 backdrop-blur-sm h-full overflow-hidden" onDoubleClick={handleFlip}>
                         <CardContent className="p-2 h-full flex flex-col">
                             <textarea
