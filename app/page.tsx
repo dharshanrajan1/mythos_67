@@ -9,7 +9,7 @@ import { Clock } from "@/components/Clock"
 import { Greeting } from "@/components/Greeting"
 import { prisma } from "@/lib/prisma"
 import { format } from "date-fns"
-import { TaskWidget } from "@/components/home/TaskWidget"
+import { FocusWidget } from "@/components/home/FocusWidget"
 import { RecentActivityList } from "@/components/home/RecentActivityList"
 
 export default async function Home() {
@@ -27,10 +27,20 @@ export default async function Home() {
     }
   })
 
+  /* 
+   * Recent Activity 10-Day Rule:
+   * Only show activities completed within the last 10 days.
+   */
+  const tenDaysAgo = new Date();
+  tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+
   const completedTasks = await prisma.task.findMany({
     where: {
       userId: session.user.id,
-      status: "COMPLETED"
+      status: "COMPLETED",
+      updatedAt: {
+        gte: tenDaysAgo
+      }
     },
     orderBy: {
       updatedAt: 'desc'
@@ -99,7 +109,7 @@ export default async function Home() {
             </CardContent>
           </Card>
 
-          <TaskWidget initialTasks={todaysTasks} today={today} />
+          <FocusWidget initialTasks={todaysTasks} today={today} />
         </div>
       </div>
     </div>

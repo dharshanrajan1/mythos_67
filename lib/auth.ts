@@ -4,6 +4,8 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
+import GoogleProvider from "next-auth/providers/google"
+
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(prisma),
     session: {
@@ -13,6 +15,17 @@ export const authOptions: NextAuthOptions = {
         signIn: "/login",
     },
     providers: [
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID || "",
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+            authorization: {
+                params: {
+                    scope: "openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events",
+                    access_type: "offline",
+                    prompt: "consent",
+                },
+            },
+        }),
         CredentialsProvider({
             name: "credentials",
             credentials: {
@@ -57,10 +70,22 @@ export const authOptions: NextAuthOptions = {
                 session.user.id = token.id as string
                 session.user.name = token.name
                 session.user.email = token.email
+                // Pass tokens to the client-side session (careful with exposure, but needed for client-side usage or server actions needing it)
+                // Actually, for this app, we might only need them server-side.
+                // But let's attach them to the session object for now so our API routes can access them via getServerSession
+                // Type augmentation might be needed for TS.
+                // @ts-ignore
+                session.accessToken = token.accessToken
+                // @ts-ignore
+                session.refreshToken = token.refreshToken
             }
             return session
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, account }) {
+            if (account) {
+                token.accessToken = account.access_token
+                token.refreshToken = account.refresh_token
+            }
             if (user) {
                 token.id = user.id
             }

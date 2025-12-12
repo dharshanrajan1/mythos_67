@@ -51,12 +51,18 @@ export async function GET(req: Request) {
 
     try {
         if (!dateString) {
-            // Return list of dates that have entries
+            // Return list of dates that have entries (non-empty)
             const entries = await prisma.diaryEntry.findMany({
-                where: { userId: session.user.id },
+                where: {
+                    userId: session.user.id,
+                    content: {
+                        not: ""
+                    }
+                },
                 select: { date: true }
             })
-            return NextResponse.json(entries.map(e => e.date))
+            // Return YYYY-MM-DD strings (assuming dates are stored as UTC midnight)
+            return NextResponse.json(entries.map(e => e.date.toISOString().split('T')[0]))
         }
 
         const entryDate = new Date(dateString)

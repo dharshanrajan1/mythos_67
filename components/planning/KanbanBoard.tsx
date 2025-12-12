@@ -54,8 +54,17 @@ export function KanbanBoard() {
                 headers: { "Content-Type": "application/json" },
             })
             if (res.ok) {
+                const createdTask = await res.json()
                 setNewTask("")
                 fetchTasks()
+
+                // Sync to Google Calendar (Fire and forget)
+                fetch("/api/planning/sync", {
+                    method: "POST",
+                    body: JSON.stringify({ taskId: createdTask.id, day: selectedDay, content: newTask }),
+                    headers: { "Content-Type": "application/json" }
+                }).catch(e => console.error("Sync failed", e))
+
             } else {
                 if (res.status === 401) setError("Please login to add tasks")
                 else setError("Failed to add task")
@@ -69,6 +78,7 @@ export function KanbanBoard() {
     const updateTaskDay = async (id: string, day: string) => {
         // Optimistic update
         const previousTasks = [...tasks]
+        const taskContent = tasks.find(t => t.id === id)?.content || "Task"
         setTasks(tasks.map(t => t.id === id ? { ...t, day } : t))
 
         try {
@@ -80,6 +90,14 @@ export function KanbanBoard() {
             if (!res.ok) {
                 throw new Error("Failed to update")
             }
+
+            // Sync to Google Calendar
+            fetch("/api/planning/sync", {
+                method: "POST",
+                body: JSON.stringify({ taskId: id, day, content: taskContent }),
+                headers: { "Content-Type": "application/json" }
+            }).catch(e => console.error("Sync failed", e))
+
         } catch (error) {
             console.error("Failed to update task day", error)
             setTasks(previousTasks) // Revert on error
