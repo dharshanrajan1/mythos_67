@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
+import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ParticleBackground } from "@/components/ui/ParticleBackground";
 
-const inter = Inter({ subsets: ["latin"] });
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Personal OS",
   description: "A one-stop shop for work and personal tracking",
 };
-
-import { NextAuthProvider } from "@/components/providers/NextAuthProvider";
-
-import { BackgroundBlobs } from "@/components/ui/BackgroundBlobs";
 
 export default function RootLayout({
   children,
@@ -20,17 +23,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <NextAuthProvider>
-          <div className="min-h-screen bg-background text-white selection:bg-primary/30 relative">
-            <BackgroundBlobs />
-            <Navbar />
-            <main className="pt-20 px-4 md:px-6 max-w-7xl mx-auto h-full min-h-screen">
-              {children}
-            </main>
-          </div>
-        </NextAuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${plusJakartaSans.variable} font-sans`} suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+        >
+          <NextAuthProvider>
+            <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 relative">
+              <ParticleBackground />
+              <main className="px-4 md:px-6 max-w-7xl mx-auto min-h-screen pb-28 pt-8">
+                {children}
+              </main>
+              <Navbar />
+            </div>
+          </NextAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,17 +1,28 @@
-import { Task } from "./KanbanBoard"
+import { Task, Priority, PRIORITY_CONFIG } from "./KanbanBoard"
 import { Trash, CheckCircle2, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+const PRIORITY_ORDER: Priority[] = ['HIGH', 'MEDIUM', 'LOW']
+
 interface TaskItemProps {
     task: Task
+    weekDateLabels?: Record<string, string>
     onDelete: (id: string) => void
     onStatusChange: (id: string, status: string) => void
+    onPriorityChange: (id: string, priority: string) => void
     onUpdateDay: (id: string, day: string) => void
 }
 
-export function TaskItem({ task, onDelete, onStatusChange, onUpdateDay }: TaskItemProps) {
+export function TaskItem({ task, weekDateLabels, onDelete, onStatusChange, onPriorityChange, onUpdateDay }: TaskItemProps) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    const priority = (task.priority || 'MEDIUM') as Priority
+    const priorityCfg = PRIORITY_CONFIG[priority]
+
+    const cyclePriority = () => {
+        const next = PRIORITY_ORDER[(PRIORITY_ORDER.indexOf(priority) + 1) % PRIORITY_ORDER.length]
+        onPriorityChange(task.id, next)
+    }
 
     return (
         <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
@@ -23,6 +34,15 @@ export function TaskItem({ task, onDelete, onStatusChange, onUpdateDay }: TaskIt
                 )}
             >
                 {task.status === 'COMPLETED' && <CheckCircle2 className="h-3 w-3" />}
+            </button>
+
+            {/* Priority dot */}
+            <button
+                onClick={cyclePriority}
+                title={`Priority: ${priorityCfg.label} — tap to cycle`}
+                className="shrink-0"
+            >
+                <span className={cn("block h-2.5 w-2.5 rounded-full", priorityCfg.dotClass)} />
             </button>
 
             <span className={cn(
@@ -39,7 +59,9 @@ export function TaskItem({ task, onDelete, onStatusChange, onUpdateDay }: TaskIt
                     </SelectTrigger>
                     <SelectContent>
                         {days.map(d => (
-                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                            <SelectItem key={d} value={d}>
+                                {weekDateLabels ? `${d} · ${weekDateLabels[d]}` : d}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>

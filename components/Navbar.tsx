@@ -3,134 +3,128 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Book, Dumbbell, Calendar, StickyNote, LogOut } from "lucide-react"
+import { Home, Book, Dumbbell, LayoutDashboard, CalendarDays, LogOut, Library } from "lucide-react"
 import { signOut } from "next-auth/react"
-import { motion } from "framer-motion"
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
+import { useRef } from "react"
+import { ThemeSwitcher } from "@/components/ThemeSwitcher"
 
 const routes = [
-    {
-        label: "Home",
-        href: "/",
-    },
-    {
-        label: "Journal",
-        href: "/diary",
-    },
-    {
-        label: "Fitness",
-        href: "/fitness",
-    },
-    {
-        label: "Mind Dump",
-        href: "/dashboard",
-    },
-    {
-        label: "Planning",
-        href: "/planning",
-    },
+    { label: "Home",      href: "/",          icon: Home },
+    { label: "Journal",   href: "/diary",      icon: Book },
+    { label: "Fitness",   href: "/fitness",    icon: Dumbbell },
+    { label: "Mind Dump", href: "/mind-dump",   icon: LayoutDashboard },
+    { label: "Planning",  href: "/planning",   icon: CalendarDays },
+    { label: "Media",     href: "/media",      icon: Library },
 ]
 
-import { useState } from "react"
-import { Menu, X } from "lucide-react"
-import { AnimatePresence } from "framer-motion"
+function DockItem({
+    href,
+    label,
+    icon: Icon,
+    active,
+    mouseX,
+}: {
+    href: string
+    label: string
+    icon: React.ElementType
+    active: boolean
+    mouseX: ReturnType<typeof useMotionValue<number>>
+}) {
+    const ref = useRef<HTMLAnchorElement>(null)
 
-// ... imports
+    const distance = useTransform(mouseX, (val) => {
+        const bounds = ref.current?.getBoundingClientRect()
+        if (!bounds) return 999
+        return val - (bounds.left + bounds.width / 2)
+    })
+
+    const scale = useSpring(
+        useTransform(distance, [-120, 0, 120], [1, 1.55, 1]),
+        { stiffness: 300, damping: 25 }
+    )
+
+    return (
+        <Link ref={ref} href={href}>
+            <motion.div
+                style={{ scale }}
+                className={cn(
+                    "relative flex flex-col items-center justify-center w-9 h-9 sm:w-12 sm:h-12 rounded-2xl transition-colors duration-200 cursor-pointer group",
+                    active
+                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/40"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                )}
+            >
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+
+                {/* Tooltip */}
+                <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-medium bg-popover text-popover-foreground border border-border shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none">
+                    {label}
+                </span>
+
+                {/* Active dot */}
+                {active && (
+                    <span className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-primary-foreground/60" />
+                )}
+            </motion.div>
+        </Link>
+    )
+}
 
 export function Navbar() {
     const pathname = usePathname()
-    const [isOpen, setIsOpen] = useState(false)
+    const mouseX = useMotionValue(Infinity)
 
     return (
-        <>
-            <motion.nav
-                initial={{ y: -100 }}
-                animate={{ y: 0 }}
-                className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-white/10 bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center justify-between px-6"
-            >
-                <div className="flex items-center gap-8">
-                    <Link href="/" className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-violet-600 flex items-center justify-center">
-                            <span className="font-bold text-white text-sm">OS</span>
-                        </div>
-                    </Link>
-
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center gap-1">
-                        {routes.map((route) => (
-                            <Link
-                                key={route.href}
-                                href={route.href}
-                                className={cn(
-                                    "px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 relative group",
-                                    pathname === route.href ? "text-white" : "text-zinc-400 hover:text-white"
-                                )}
-                            >
-                                {route.label}
-                                {pathname === route.href && (
-                                    <motion.div
-                                        layoutId="navbar-indicator"
-                                        className="absolute inset-0 bg-white/10 rounded-full -z-10"
-                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                    />
-                                )}
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => signOut({ callbackUrl: "/login" })}
-                        className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-red-400"
-                        title="Logout"
-                    >
-                        <LogOut className="h-5 w-5" />
-                    </button>
-
-                    {/* Mobile Menu Toggle */}
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="md:hidden p-2 text-zinc-400 hover:text-white"
-                    >
-                        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                    </button>
-                </div>
-            </motion.nav>
-
-            {/* Mobile Menu Overlay */}
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm md:hidden pt-20 px-6"
-                    >
-                        <div className="flex flex-col gap-4">
-                            {routes.map((route) => (
-                                <Link
-                                    key={route.href}
-                                    href={route.href}
-                                    onClick={() => setIsOpen(false)}
-                                    className={cn(
-                                        "text-lg font-medium py-4 border-b border-white/10",
-                                        pathname === route.href ? "text-primary" : "text-muted-foreground"
-                                    )}
-                                >
-                                    {route.label}
-                                </Link>
-                            ))}
-                            <button
-                                onClick={() => signOut({ callbackUrl: "/login" })}
-                                className="flex items-center gap-2 text-red-400 py-4 font-medium"
-                            >
-                                <LogOut className="h-5 w-5" />
-                                Logout
-                            </button>
-                        </div>
-                    </motion.div>
+        <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+            className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50"
+        >
+            <motion.div
+                onMouseMove={(e) => mouseX.set(e.clientX)}
+                onMouseLeave={() => mouseX.set(Infinity)}
+                className={cn(
+                    "flex items-center gap-0.5 sm:gap-1 px-2 sm:px-4 py-2 sm:py-3 rounded-3xl",
+                    "border border-border/40",
+                    "bg-background/70 backdrop-blur-2xl",
+                    "shadow-xl shadow-black/20"
                 )}
-            </AnimatePresence>
-        </>
+            >
+                {routes.map((route) => (
+                    <DockItem
+                        key={route.href}
+                        href={route.href}
+                        label={route.label}
+                        icon={route.icon}
+                        active={pathname === route.href}
+                        mouseX={mouseX}
+                    />
+                ))}
+
+                {/* Divider */}
+                <div className="w-px h-8 bg-border/60 mx-1" />
+
+                {/* Theme switcher */}
+                <div className="px-1">
+                    <ThemeSwitcher />
+                </div>
+
+                {/* Divider */}
+                <div className="w-px h-8 bg-border/60 mx-1" />
+
+                {/* Logout */}
+                <motion.button
+                    whileHover={{ scale: 1.15 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
+                    title="Logout"
+                >
+                    <LogOut className="h-4.5 w-4.5" />
+                </motion.button>
+            </motion.div>
+        </motion.div>
     )
 }

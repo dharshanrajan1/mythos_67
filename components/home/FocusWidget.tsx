@@ -69,13 +69,13 @@ export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
     }
 
     return (
-        <Card className="glass border-0 h-full flex flex-col">
+        <Card className="bg-card/50 backdrop-blur-md border-border/30 h-full flex flex-col">
             <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg font-light">
-                    <Calendar className="h-5 w-5 text-primary" /> Today's Focus ({today})
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <Calendar className="h-4 w-4 text-primary" /> Today's Focus ({today})
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            <CardContent className="space-y-6 flex-1 overflow-y-auto pr-2">
 
                 {/* Section 1: Tasks */}
                 <div className="space-y-3">
@@ -95,7 +95,7 @@ export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
                                             "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-300 group",
                                             task.status === 'COMPLETED'
                                                 ? "bg-green-500/10 hover:bg-green-500/20"
-                                                : "bg-white/5 hover:bg-white/10"
+                                                : "bg-muted/50 hover:bg-muted/80"
                                         )}
                                     >
                                         <div className="relative">
@@ -123,7 +123,7 @@ export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
                                         </div>
                                         <span className={cn(
                                             "transition-all duration-300 font-medium text-sm",
-                                            task.status === 'COMPLETED' ? "line-through text-white/50" : "text-white"
+                                            task.status === 'COMPLETED' ? "line-through text-muted-foreground" : "text-foreground"
                                         )}>
                                             {task.content}
                                         </span>
@@ -148,8 +148,8 @@ export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
                     <div className="space-y-2">
                         {loadingEvents ? (
                             <div className="animate-pulse space-y-2">
-                                <div className="h-10 bg-white/5 rounded-xl"></div>
-                                <div className="h-10 bg-white/5 rounded-xl"></div>
+                                <div className="h-10 bg-muted/50 rounded-xl"></div>
+                                <div className="h-10 bg-muted/50 rounded-xl"></div>
                             </div>
                         ) : events.length > 0 ? (
                             events.map(event => {

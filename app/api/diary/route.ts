@@ -61,12 +61,13 @@ export async function GET(req: Request) {
                         not: ""
                     }
                 },
-                select: { date: true, rating: true }
+                select: { date: true, rating: true, content: true }
             })
             // Return objects with date and rating
             return NextResponse.json(entries.map(e => ({
                 date: e.date.toISOString().split('T')[0],
-                rating: e.rating
+                rating: e.rating,
+                excerpt: e.content.slice(0, 140),
             })))
         }
 

@@ -8,10 +8,6 @@ export default withAuth({
 
 export const config = {
     matcher: [
-        "/diary/:path*",
-        "/fitness/:path*",
-        "/dashboard/:path*",
-        "/planning/:path*",
-        "/", // Protect home page too? Probably yes as it has widgets
+        "/((?!api/auth|api/register|_next/static|_next/image|favicon.ico|login|signup).*)"
     ]
 }

@@ -11,13 +11,14 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { workout, date } = body
+        const { workout, date, isPR } = body
 
         const log = await prisma.workoutLog.create({
             data: {
                 userId: session.user.id,
                 workout,
                 date: new Date(date),
+                isPR: isPR ?? false,
             },
         })
 
@@ -45,6 +46,24 @@ export async function GET(req: Request) {
         })
 
         return NextResponse.json(logs)
+    } catch (error) {
+        return new NextResponse("Internal Error", { status: 500 })
+    }
+}
+
+export async function PUT(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session) return new NextResponse("Unauthorized", { status: 401 })
+
+    try {
+        const body = await req.json()
+        const { id, isPR } = body
+
+        const log = await prisma.workoutLog.update({
+            where: { id, userId: session.user.id },
+            data: { isPR },
+        })
+        return NextResponse.json(log)
     } catch (error) {
         return new NextResponse("Internal Error", { status: 500 })
     }
