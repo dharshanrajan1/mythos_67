@@ -11,6 +11,15 @@ export async function POST(req: Request) {
             return new NextResponse("Missing info", { status: 400 })
         }
 
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({
+            where: { email },
+        })
+
+        if (existingUser) {
+            return new NextResponse("Email already in use. Perhaps you signed in with Google?", { status: 400 })
+        }
+
         const hashedPassword = await bcrypt.hash(password, 12)
 
         const user = await prisma.user.create({
@@ -23,6 +32,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json(user)
     } catch (error: any) {
+        console.error("REGISTRATION_ERROR", error)
         return new NextResponse("Internal Error", { status: 500 })
     }
 }
