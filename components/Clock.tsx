@@ -21,8 +21,13 @@ export function Clock() {
     }
 
     return (
-        <div className="font-mono text-4xl sm:text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground">
-            {format(time, "hh:mm:ss a")}
+        <div className="flex flex-col gap-1">
+            <div className="font-mono text-4xl sm:text-6xl md:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground">
+                {format(time, "hh:mm:ss a")}
+            </div>
+            <p className="text-sm sm:text-base text-muted-foreground font-medium">
+                {format(time, "EEEE, MMMM d, yyyy")}
+            </p>
         </div>
     )
 }

@@ -21,12 +21,14 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const weekOf = searchParams.get("weekOf")
+    const day = searchParams.get("day")
     const currentWeekKey = getMondayKey(new Date())
 
     try {
         const tasks = await prisma.task.findMany({
             where: {
                 userId: session.user.id,
+                ...(day ? { day } : {}),
                 ...(weekOf ? {
                     OR: [
                         { weekOf },

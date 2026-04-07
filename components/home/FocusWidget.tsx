@@ -27,26 +27,53 @@ interface FocusWidgetProps {
     today: string
 }
 
-export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
+export function FocusWidget({ initialTasks, today: serverToday }: FocusWidgetProps) {
     const [tasks, setTasks] = useState(initialTasks)
+    const [loadingTasks, setLoadingTasks] = useState(false)
+    const [today, setToday] = useState(serverToday)
     const [events, setEvents] = useState<CalendarEvent[]>([])
     const [loadingEvents, setLoadingEvents] = useState(true)
 
+    const getMondayKey = (date: Date): string => {
+        const dayOfWeek = date.getDay()
+        const monday = new Date(date)
+        monday.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
+        const y = monday.getFullYear()
+        const m = String(monday.getMonth() + 1).padStart(2, '0')
+        const d = String(monday.getDate()).padStart(2, '0')
+        return `${y}-${m}-${d}`
+    }
+
     useEffect(() => {
-        const fetchEvents = async () => {
+        const localDate = new Date()
+        const localDay = format(localDate, "EEEE")
+        setToday(localDay)
+
+        const fetchTodayData = async () => {
+            setLoadingTasks(true)
             try {
-                const res = await fetch("/api/calendar/today")
-                if (res.ok) {
-                    const data = await res.json()
+                // 1. Fetch Tasks for the correct local day
+                const weekOf = getMondayKey(localDate)
+                const taskRes = await fetch(`/api/planning?weekOf=${weekOf}&day=${localDay}`)
+                if (taskRes.ok) {
+                    const taskList = await taskRes.json()
+                    setTasks(taskList)
+                }
+
+                // 2. Fetch Calendar Events
+                const eventRes = await fetch("/api/calendar/today")
+                if (eventRes.ok) {
+                    const data = await eventRes.json()
                     setEvents(data.events || [])
                 }
             } catch (error) {
-                console.error("Failed to fetch calendar events", error)
+                console.error("Failed to fetch today's data", error)
             } finally {
+                setLoadingTasks(false)
                 setLoadingEvents(false)
             }
         }
-        fetchEvents()
+        fetchTodayData()
     }, [])
 
     const toggleTask = async (id: string, currentStatus: string) => {
@@ -81,6 +108,12 @@ export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
                 <div className="space-y-3">
                     <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Your Tasks</h3>
                     <div className="space-y-2">
+                        {loadingTasks ? (
+                             <div className="animate-pulse space-y-2">
+                                <div className="h-10 bg-muted/50 rounded-xl"></div>
+                                <div className="h-10 bg-muted/50 rounded-xl"></div>
+                            </div>
+                        ) : (
                         <AnimatePresence mode="popLayout">
                             {tasks.length > 0 ? (
                                 tasks.map(task => (
@@ -139,6 +172,7 @@ export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                        )}
                     </div>
                 </div>
 

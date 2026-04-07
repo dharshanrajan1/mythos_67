@@ -177,7 +177,6 @@ export default async function Home() {
           <div className="space-y-1">
             <Greeting name={session.user?.name} />
             <Clock />
-            <p className="text-sm text-muted-foreground mt-1">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
             {goodDaysThisMonth > 0 && (
               <p className="text-xs text-emerald-500 font-medium mt-0.5">
                 ✦ {goodDaysThisMonth} good day{goodDaysThisMonth === 1 ? "" : "s"} this month
