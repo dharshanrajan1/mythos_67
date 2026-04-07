@@ -169,11 +169,12 @@ function LinkCard({ note, onDelete }: { note: ParsedNote; onDelete: () => void }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline truncate max-w-full"
+                        title={note.text || note.url}
                     >
-                        <span className="truncate">{domain}</span>
+                        <span className="truncate font-medium">{note.text || domain}</span>
                         <ExternalLink className="h-3 w-3 shrink-0" />
                     </a>
-                    <p className="text-xs text-muted-foreground truncate">{note.url}</p>
+                    <p className="text-xs text-muted-foreground truncate">{note.text ? domain : note.url}</p>
                     <div className="flex items-center gap-2 flex-wrap">
                         {note.tag && <TagBadge tag={note.tag} />}
                         <span className="text-xs text-muted-foreground">{format(new Date(note.createdAt), "MMM d, yyyy · h:mm a")}</span>
@@ -203,19 +204,22 @@ function YoutubeCard({ note, onDelete }: { note: ParsedNote; onDelete: () => voi
             </div>
             {(note.note || note.tag) && (
                 <div className="p-3 flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 mr-1">
-                        <Youtube className="h-3.5 w-3.5 text-rose-500" />
+                    <div className="flex items-center gap-1.5 mr-1 max-w-[80%]">
+                        <Youtube className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                        {note.text && <span className="text-sm font-medium truncate">{note.text}</span>}
                     </div>
-                    {note.note && <p className="text-sm text-foreground">{note.note}</p>}
+                    {note.note && <p className="text-sm text-foreground w-full">{note.note}</p>}
                     {note.tag && <TagBadge tag={note.tag} />}
                     <span className="text-xs text-muted-foreground ml-auto">{format(new Date(note.createdAt), "MMM d, yyyy")}</span>
                 </div>
             )}
             {!note.note && !note.tag && (
-                <div className="px-3 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                        <Youtube className="h-3.5 w-3.5 text-rose-500" />
-                        <span className="text-xs text-muted-foreground">{getDomain(note.url ?? "youtube.com")}</span>
+                <div className="px-3 py-2 flex items-center justify-between gap-2 overflow-hidden">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <Youtube className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                        <span className="text-xs font-medium text-muted-foreground truncate" title={note.text || 'YouTube Video'}>
+                            {note.text || getDomain(note.url ?? "youtube.com")}
+                        </span>
                     </div>
                     <span className="text-xs text-muted-foreground">{format(new Date(note.createdAt), "MMM d, yyyy")}</span>
                 </div>

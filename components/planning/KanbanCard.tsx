@@ -78,7 +78,7 @@ export function KanbanCard({ task, onDelete, onStatusChange, onPriorityChange, o
                 <div className={cn("absolute inset-0 backface-hidden", !isFlipped ? "z-10" : "z-0")}>
                     <Card
                         className={cn(
-                            "bg-secondary/30 border-white/5 backdrop-blur-sm hover:bg-secondary/50 transition-colors h-full",
+                            "bg-secondary/30 border-black/5 dark:border-white/5 backdrop-blur-sm hover:bg-secondary/50 transition-colors h-full",
                             task.status === 'COMPLETED' && "opacity-60"
                         )}
                         onDoubleClick={() => setIsFlipped(true)}
@@ -124,8 +124,8 @@ export function KanbanCard({ task, onDelete, onStatusChange, onPriorityChange, o
                                     className={cn(
                                         "text-[10px] px-1.5 py-0.5 rounded-full border transition-colors flex items-center gap-1 flex-1",
                                         task.status === 'COMPLETED'
-                                            ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                            : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"
+                                            ? "bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/20 dark:border-green-500/30"
+                                            : "bg-black/5 dark:bg-white/5 text-muted-foreground border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10"
                                     )}
                                 >
                                     <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
@@ -150,7 +150,7 @@ export function KanbanCard({ task, onDelete, onStatusChange, onPriorityChange, o
                 {/* Back Side (Notes) */}
                 <div className={cn("absolute inset-0 backface-hidden rotate-y-180", isFlipped ? "z-10" : "z-0")}>
                     <Card
-                        className="bg-secondary/30 border-white/5 backdrop-blur-sm h-full overflow-hidden"
+                        className="bg-secondary/30 border-black/5 dark:border-white/5 backdrop-blur-sm h-full overflow-hidden"
                         onDoubleClick={() => setIsFlipped(false)}
                     >
                         <CardContent className="p-2 h-full flex flex-col">

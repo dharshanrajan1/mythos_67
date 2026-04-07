@@ -105,7 +105,12 @@ export function DiaryEditor({ date }: { date: string }) {
                                 key={mood.value}
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
-                                onClick={() => setRating(prev => prev === mood.value ? null : mood.value)}
+                                onClick={() => {
+                                    if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+                                        window.navigator.vibrate(10);
+                                    }
+                                    setRating(prev => prev === mood.value ? null : mood.value);
+                                }}
                                 className={cn(
                                     "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
                                     rating === mood.value

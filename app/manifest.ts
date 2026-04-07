@@ -27,5 +27,28 @@ export default function manifest(): MetadataRoute.Manifest {
                 type: "image/png",
             },
         ],
+        shortcuts: [
+            {
+                name: "New Task",
+                short_name: "Task",
+                description: "Add a new task to your plan",
+                url: "/planning",
+                icons: [{ src: "/apple-icon", sizes: "192x192" }],
+            },
+            {
+                name: "Quick Dump",
+                short_name: "Dump",
+                description: "Drop a link or idea",
+                url: "/mind-dump",
+                icons: [{ src: "/apple-icon", sizes: "192x192" }],
+            },
+            {
+                name: "Log Workout",
+                short_name: "Workout",
+                description: "Log your daily workout",
+                url: "/fitness",
+                icons: [{ src: "/apple-icon", sizes: "192x192" }],
+            },
+        ]
     }
 }

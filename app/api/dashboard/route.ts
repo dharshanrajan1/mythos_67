@@ -24,7 +24,33 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { content, type } = body
+        let { content, type } = body
+
+        if (typeof content === "string") {
+            try {
+                const parsedContent = JSON.parse(content)
+                if (type === "youtube" && parsedContent.url) {
+                    const ytRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(parsedContent.url)}&format=json`)
+                    if (ytRes.ok) {
+                        const ytData = await ytRes.json()
+                        parsedContent.text = ytData.title
+                        content = JSON.stringify(parsedContent)
+                    }
+                } else if (type === "link" && parsedContent.url) {
+                    const cheerio = await import("cheerio")
+                    const linkRes = await fetch(parsedContent.url, { headers: { 'User-Agent': 'MeridianBot/1.0' }, signal: AbortSignal.timeout(3000) })
+                    if (linkRes.ok) {
+                        const html = await linkRes.text()
+                        const $ = cheerio.load(html)
+                        const title = $('meta[property="og:title"]').attr('content') || $('title').text() || ''
+                        if (title) parsedContent.text = title.trim()
+                        content = JSON.stringify(parsedContent)
+                    }
+                }
+            } catch (e) {
+                // Ignore errors and fall back to plain url
+            }
+        }
 
         const note = await prisma.noteBlock.create({
             data: {

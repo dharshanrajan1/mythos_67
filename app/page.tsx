@@ -106,13 +106,7 @@ export default async function Home() {
       sub: "Completed task",
       timestamp: t.updatedAt.toISOString(),
     })),
-    ...recentDiary.map(d => ({
-      id: `diary-${d.id}`,
-      type: "diary" as const,
-      label: `Journal — ${format(d.date, "MMM d")}`,
-      sub: d.content ? d.content.slice(0, 60) + (d.content.length > 60 ? "…" : "") : "Entry written",
-      timestamp: d.date.toISOString(),
-    })),
+    // removed diary to keep it private
     ...recentWorkouts.map(w => ({
       id: `workout-${w.id}`,
       type: "workout" as const,

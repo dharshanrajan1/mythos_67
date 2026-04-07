@@ -32,7 +32,7 @@ export function RecentActivityList({ tasks }: RecentActivityListProps) {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="flex items-start gap-3 pb-3 border-b border-white/5 last:border-0 last:pb-0"
+                        className="flex items-start gap-3 pb-3 border-b border-black/5 dark:border-white/5 last:border-0 last:pb-0"
                     >
                         <div className="mt-1">
                             <CheckCircle2 className="h-4 w-4 text-green-500" />

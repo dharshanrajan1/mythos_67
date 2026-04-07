@@ -42,17 +42,17 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 export const PRIORITY_CONFIG: Record<Priority, { label: string; badgeClass: string; dotClass: string }> = {
     HIGH: {
         label: 'High',
-        badgeClass: 'bg-red-500/20 text-red-400 border-red-500/30',
+        badgeClass: 'bg-red-500/10 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/20 dark:border-red-500/30',
         dotClass: 'bg-red-500',
     },
     MEDIUM: {
         label: 'Med',
-        badgeClass: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+        badgeClass: 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/20 dark:border-amber-500/30',
         dotClass: 'bg-amber-500',
     },
     LOW: {
         label: 'Low',
-        badgeClass: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        badgeClass: 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/20 dark:border-blue-500/30',
         dotClass: 'bg-blue-500',
     },
 }
@@ -216,6 +216,9 @@ export function KanbanBoard() {
     }
 
     const updateTaskStatus = async (id: string, status: string) => {
+        if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(10); // Subtle haptic tap
+        }
         setTasks(tasks.map(t => t.id === id ? { ...t, status } : t))
         try {
             await fetch("/api/planning", {
@@ -230,6 +233,9 @@ export function KanbanBoard() {
     }
 
     const updateTaskPriority = async (id: string, priority: string) => {
+        if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(10); // Subtle haptic tap
+        }
         setTasks(tasks.map(t => t.id === id ? { ...t, priority } : t))
         try {
             await fetch("/api/planning", {
@@ -395,7 +401,7 @@ export function KanbanBoard() {
                             <span>Weekly Progress</span>
                             <span>{completedCount} / {totalCount} tasks complete</span>
                         </div>
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-primary rounded-full transition-all duration-500"
                                 style={{ width: `${completionPct}%` }}
@@ -513,7 +519,7 @@ export function KanbanBoard() {
                             <div key={day} className="space-y-2">
                                 <div className={cn(
                                     "flex items-center gap-2 pb-1 border-b",
-                                    isToday ? "border-primary/30" : "border-white/10"
+                                    isToday ? "border-primary/30" : "border-black/5 dark:border-white/10"
                                 )}>
                                     <span className={cn(
                                         "font-semibold text-base",

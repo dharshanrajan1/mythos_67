@@ -27,12 +27,12 @@ export function KanbanColumn({ day, dateLabel, isToday, tasks, events = [], onDe
             "flex flex-col rounded-xl p-2 transition-colors",
             isToday
                 ? "bg-primary/5 ring-1 ring-primary/20"
-                : "bg-white/[0.02] ring-1 ring-white/5"
+                : "bg-black/[0.02] dark:bg-white/[0.02] ring-1 ring-black/5 dark:ring-white/5"
         )}>
             {/* Column header */}
             <div className={cn(
                 "pb-2 mb-2 border-b flex flex-col gap-0.5",
-                isToday ? "border-primary/30" : "border-white/10"
+                isToday ? "border-primary/30" : "border-black/5 dark:border-white/10"
             )}>
                 <div className="flex items-center justify-between">
                     <span className={cn(

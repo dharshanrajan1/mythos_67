@@ -160,12 +160,12 @@ export function FocusWidget({ initialTasks, today }: FocusWidgetProps) {
 
                                 return (
                                     <div key={event.id} className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                                        <div className="p-2 bg-blue-500/20 rounded-full text-blue-400">
+                                        <div className="p-2 bg-blue-500/20 rounded-full text-blue-600 dark:text-blue-400">
                                             <Clock className="w-4 h-4" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-medium text-blue-100">{event.summary || "(No Title)"}</span>
-                                            <span className="text-xs text-blue-300/80">{timeString}</span>
+                                            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{event.summary || "(No Title)"}</span>
+                                            <span className="text-xs text-blue-600 dark:text-blue-300/80">{timeString}</span>
                                         </div>
                                     </div>
                                 )
