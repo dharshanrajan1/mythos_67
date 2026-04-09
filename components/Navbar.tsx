@@ -11,12 +11,12 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher"
 import { MobileActionDrawer } from "@/components/ui/MobileActionDrawer"
 
 const routes = [
-    { label: "Home",      href: "/",          icon: Home },
-    { label: "Journal",   href: "/diary",      icon: Book },
-    { label: "Fitness",   href: "/fitness",    icon: Dumbbell },
-    { label: "Mind Dump", href: "/mind-dump",   icon: LayoutDashboard },
-    { label: "Planning",  href: "/planning",   icon: CalendarDays },
-    { label: "Media",     href: "/media",      icon: Library },
+    { label: "Home", href: "/", icon: Home },
+    { label: "Journal", href: "/diary", icon: Book },
+    { label: "Fitness", href: "/fitness", icon: Dumbbell },
+    { label: "Mind Dump", href: "/mind-dump", icon: LayoutDashboard },
+    { label: "Planning", href: "/planning", icon: CalendarDays },
+    { label: "Media", href: "/media", icon: Library },
 ]
 
 function DockItem({
@@ -154,9 +154,9 @@ export function Navbar() {
             </motion.div>
 
             {/* Mobile Quick Actions Drawer */}
-            <MobileActionDrawer 
-                isOpen={isActionOpen} 
-                onClose={() => setIsActionOpen(false)} 
+            <MobileActionDrawer
+                isOpen={isActionOpen}
+                onClose={() => setIsActionOpen(false)}
             />
         </motion.div>
     )

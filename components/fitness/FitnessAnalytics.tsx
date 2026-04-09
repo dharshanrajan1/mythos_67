@@ -5,7 +5,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { format, subDays, startOfDay, startOfWeek, addDays } from "date-fns"
 import { MuscleMap } from "./MuscleMap"
 import { getMusclesFromExercise, MuscleGroup } from "@/lib/muscle-mapping"
-import { Activity, TrendingUp, Info, Clock } from "lucide-react"
+import { Activity, TrendingUp, Info, Clock, Zap } from "lucide-react"
+import { getAllProgressionTips } from "@/lib/progression"
 
 interface SetData {
   weight: number
@@ -35,7 +36,7 @@ export function FitnessAnalytics({ logs }: { logs: WorkoutLog[] }) {
   const muscleHeat = useMemo(() => {
     const heat: Record<MuscleGroup, number> = {
       chest: 0, back: 0, quads: 0, hamstrings: 0, shoulders: 0,
-      biceps: 0, triceps: 0, abs: 0, glutes: 0, calves: 0,
+      biceps: 0, triceps: 0, abs: 0, glutes: 0, calves: 0, forearms: 0,
     }
     const nowLocal = startOfDay(new Date())
 
@@ -121,6 +122,9 @@ export function FitnessAnalytics({ logs }: { logs: WorkoutLog[] }) {
 
   const hasCardioData = cardioData.some(d => d.minutes > 0)
 
+  // 5. Progression tips — stalled exercises
+  const progressionTips = useMemo(() => getAllProgressionTips(logs), [logs])
+
   const tooltipStyle = {
     contentStyle: {
       backgroundColor: "hsl(var(--card))",
@@ -202,6 +206,46 @@ export function FitnessAnalytics({ logs }: { logs: WorkoutLog[] }) {
                 <Bar dataKey="minutes" fill="#38bdf8" fillOpacity={0.7} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </section>
+      )}
+
+      {/* Progression Tips */}
+      {progressionTips.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-500" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Progression Alerts</h3>
+            </div>
+            <p className="text-xs text-muted-foreground/60 mt-0.5 ml-6">
+              Exercises where you&apos;ve been at the same weight for {3}+ sessions.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {progressionTips.map(tip => (
+              <div
+                key={tip.exerciseName}
+                className={`flex items-start gap-3 rounded-xl px-4 py-3 border ${
+                  tip.type === "increase_weight"
+                    ? "bg-amber-500/8 border-amber-500/20"
+                    : "bg-sky-500/8 border-sky-500/20"
+                }`}
+              >
+                <TrendingUp className={`w-4 h-4 mt-0.5 shrink-0 ${tip.type === "increase_weight" ? "text-amber-500" : "text-sky-500"}`} />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">{tip.exerciseName}</p>
+                  <p className={`text-[11px] mt-0.5 leading-snug ${tip.type === "increase_weight" ? "text-amber-600 dark:text-amber-400" : "text-sky-600 dark:text-sky-400"}`}>
+                    {tip.message}
+                  </p>
+                </div>
+                {tip.suggestedWeight && (
+                  <span className="ml-auto shrink-0 text-[11px] font-bold text-amber-500 bg-amber-500/12 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    Try {tip.suggestedWeight} lbs
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </section>
       )}

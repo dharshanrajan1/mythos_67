@@ -16,6 +16,7 @@ import { UnifiedActivityFeed, ActivityItem } from "@/components/home/UnifiedActi
 import { WeeklyRecap, WeeklyRecapData } from "@/components/home/WeeklyRecap"
 import { CountdownWidget } from "@/components/home/CountdownWidget"
 import { GoogleCalendarWidget } from "@/components/home/GoogleCalendarWidget"
+import Image from "next/image"
 
 const quickActions = [
   {
@@ -175,14 +176,25 @@ export default async function Home() {
         <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full opacity-10 pointer-events-none"
           style={{ background: "radial-gradient(circle, hsl(var(--accent)), transparent 70%)" }} />
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-1">
-            <Greeting name={session.user?.name} />
-            <Clock />
-            {goodDaysThisMonth > 0 && (
-              <p className="text-xs text-emerald-500 font-medium mt-0.5">
-                ✦ {goodDaysThisMonth} good day{goodDaysThisMonth === 1 ? "" : "s"} this month
-              </p>
-            )}
+          <div className="flex gap-4 items-start">
+            <div className="relative w-16 h-16 shrink-0 mt-1">
+              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+              <Image 
+                src="/logo.png" 
+                alt="Meridian Logo" 
+                fill
+                className="object-contain relative z-10 drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]"
+              />
+            </div>
+            <div className="space-y-1">
+              <Greeting name={session.user?.name} />
+              <Clock />
+              {goodDaysThisMonth > 0 && (
+                <p className="text-xs text-emerald-500 font-medium mt-0.5">
+                  ✦ {goodDaysThisMonth} good day{goodDaysThisMonth === 1 ? "" : "s"} this month
+                </p>
+              )}
+            </div>
           </div>
           <div className="shrink-0">
             <WeatherWidget />

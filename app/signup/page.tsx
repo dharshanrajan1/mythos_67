@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { AlertCircle, Loader2, CheckCircle2 } from "lucide-react"
+import Image from "next/image"
 
 export default function SignupPage() {
     const router = useRouter()
@@ -63,8 +64,25 @@ export default function SignupPage() {
             >
                 <Card className="w-full bg-background/60 backdrop-blur-xl border-primary/20 shadow-2xl shadow-primary/5">
                     <CardHeader className="space-y-3 pb-6 border-b border-border/10 mb-6 mx-6 px-0 pt-6">
-                        <CardTitle className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">Create Account</CardTitle>
-                        <CardDescription className="text-muted-foreground text-sm">Join Personal OS to organize your life.</CardDescription>
+                        <div className="flex justify-center mb-2">
+                            <motion.div
+                                initial={{ y: -10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="relative w-16 h-16"
+                            >
+                                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                                <Image 
+                                    src="/logo.png" 
+                                    alt="Meridian Logo" 
+                                    fill
+                                    className="object-contain relative z-10 drop-shadow-[0_0_15px_rgba(124,58,237,0.5)]"
+                                    priority
+                                />
+                            </motion.div>
+                        </div>
+                        <CardTitle className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent text-center">Create Account</CardTitle>
+                        <CardDescription className="text-muted-foreground text-sm text-center">Join Meridian to organize your life.</CardDescription>
                     </CardHeader>
                     <CardContent className="px-6">
                         <form onSubmit={onSubmit} className="space-y-6">

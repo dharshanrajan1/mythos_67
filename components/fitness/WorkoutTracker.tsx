@@ -7,8 +7,9 @@ import { format, startOfWeek, addDays, subDays, isToday, startOfDay } from "date
 import { AnimatePresence, motion } from "framer-motion"
 import {
     X, Flame, Dumbbell, Trophy, ChevronDown, ChevronLeft, ChevronRight,
-    Plus, Minus, Clock, History, Check, Activity, ArrowUp, ArrowDown, Timer,
+    Plus, Minus, Clock, History, Check, Activity, ArrowUp, ArrowDown, Timer, TrendingUp,
 } from "lucide-react"
+import { getProgressionTip, ProgressionTip } from "@/lib/progression"
 import { cn } from "@/lib/utils"
 import confetti from "canvas-confetti"
 import { RestTimer } from "./RestTimer"
@@ -153,14 +154,17 @@ function ExercisePanel({
     exercises,
     onChange,
     getLastSession,
+    getProgressionHint,
     exerciseNames,
 }: {
     exercises: ExerciseEntry[]
     onChange: (exs: ExerciseEntry[]) => void
     getLastSession: (name: string) => GhostSession | null
+    getProgressionHint: (name: string) => ProgressionTip | null
     exerciseNames: string[]
 }) {
     const [ghosts, setGhosts] = useState<Record<string, GhostSession | null>>({})
+    const [hints, setHints] = useState<Record<string, ProgressionTip | null>>({})
     const [activePlateCalc, setActivePlateCalc] = useState<string | null>(null)
     const autoPRd = useRef(new Set<string>())
 
@@ -222,10 +226,13 @@ function ExercisePanel({
         const exUid = exercises[idx].uid
         if (!name.trim()) {
             setGhosts(g => ({ ...g, [exUid]: null }))
+            setHints(h => ({ ...h, [exUid]: null }))
             return
         }
         const session = getLastSession(name.trim())
         setGhosts(g => ({ ...g, [exUid]: session }))
+        const hint = getProgressionHint(name.trim())
+        setHints(h => ({ ...h, [exUid]: hint }))
         if (session) {
             onChange(exercises.map((ex, i) => {
                 if (i !== idx) return ex
@@ -291,6 +298,31 @@ function ExercisePanel({
                                         </span>
                                     ))}
                                 </div>
+                            </motion.div>
+                        )}
+
+                        {/* Progression hint */}
+                        {hints[ex.uid] && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                className={cn(
+                                    "flex items-start gap-2 py-1.5 px-2.5 rounded-lg border overflow-hidden",
+                                    hints[ex.uid]!.type === "increase_weight"
+                                        ? "bg-amber-500/8 border-amber-500/20"
+                                        : "bg-sky-500/8 border-sky-500/20"
+                                )}
+                            >
+                                <TrendingUp className={cn(
+                                    "h-3 w-3 mt-0.5 shrink-0",
+                                    hints[ex.uid]!.type === "increase_weight" ? "text-amber-500" : "text-sky-500"
+                                )} />
+                                <span className={cn(
+                                    "text-[10px] leading-snug",
+                                    hints[ex.uid]!.type === "increase_weight" ? "text-amber-600 dark:text-amber-400" : "text-sky-600 dark:text-sky-400"
+                                )}>
+                                    {hints[ex.uid]!.message}
+                                </span>
                             </motion.div>
                         )}
 
@@ -675,6 +707,11 @@ export function WorkoutTracker({ onDataChange }: WorkoutTrackerProps) {
         return Array.from(names).sort()
     }, [data])
 
+    // Progression hint for a given exercise
+    const getProgressionHint = useCallback((name: string) => {
+        return getProgressionTip(name, data)
+    }, [data])
+
     // Get the last logged session for a given exercise (data is newest-first)
     const getLastSession = useCallback((name: string): GhostSession | null => {
         const lower = name.toLowerCase()
@@ -916,6 +953,7 @@ export function WorkoutTracker({ onDataChange }: WorkoutTrackerProps) {
                                     exercises={exercises}
                                     onChange={setExercises}
                                     getLastSession={getLastSession}
+                                    getProgressionHint={getProgressionHint}
                                     exerciseNames={allExerciseNames}
                                 />
                             </div>
