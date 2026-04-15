@@ -77,9 +77,10 @@ export async function PUT(req: Request) {
 
     try {
         const body = await req.json()
-        const { id, isPR, exercises, duration, notes } = body
+        const { id, workout, isPR, exercises, duration, notes } = body
 
         const updateData: Record<string, unknown> = {}
+        if (workout !== undefined) updateData.workout = workout
         if (isPR !== undefined) updateData.isPR = isPR
         if (exercises !== undefined) updateData.exercises = exercises
         if (duration !== undefined) updateData.duration = duration

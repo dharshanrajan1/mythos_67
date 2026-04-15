@@ -120,6 +120,8 @@ model Task {
   priority    String   @default("MEDIUM") // HIGH, MEDIUM, LOW
   weekOf      String?  // YYYY-MM-DD of the Monday of the week this task belongs to
   gcalEventId String?  // Google Calendar event ID for two-way sync
+  startTime   String?  // "HH:MM" 24h — present means timed event, absent means all-day task
+  endTime     String?  // "HH:MM" 24h — defaults to startTime + 1h when syncing if omitted
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())

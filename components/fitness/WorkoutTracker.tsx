@@ -7,7 +7,7 @@ import { format, startOfWeek, addDays, subDays, isToday, startOfDay } from "date
 import { AnimatePresence, motion } from "framer-motion"
 import {
     X, Flame, Dumbbell, Trophy, ChevronDown, ChevronLeft, ChevronRight,
-    Plus, Minus, Clock, History, Check, Activity, ArrowUp, ArrowDown, Timer, TrendingUp,
+    Plus, Minus, Clock, History, Check, Activity, ArrowUp, ArrowDown, Timer, TrendingUp, Pencil,
 } from "lucide-react"
 import { getProgressionTip, ProgressionTip } from "@/lib/progression"
 import { cn } from "@/lib/utils"
@@ -363,7 +363,7 @@ function ExercisePanel({
                                                     onChange={e => updateSet(exIdx, setIdx, { weight: e.target.value })}
                                                     placeholder="—"
                                                     className={cn(
-                                                        "h-9 sm:h-7 text-sm bg-muted/40 text-center font-semibold",
+                                                        "h-9 sm:h-7 text-sm text-foreground bg-muted/40 text-center font-semibold",
                                                         result === "better" && "ring-1 ring-emerald-500/50",
                                                         result === "worse" && "ring-1 ring-rose-500/30",
                                                     )}
@@ -413,7 +413,7 @@ function ExercisePanel({
                                                 value={s.reps}
                                                 onChange={e => updateSet(exIdx, setIdx, { reps: e.target.value })}
                                                 placeholder="—"
-                                                className="h-9 sm:h-7 text-sm bg-muted/40 text-center font-semibold flex-1"
+                                                className="h-9 sm:h-7 text-sm text-foreground bg-muted/40 text-center font-semibold flex-1"
                                             />
                                             <button
                                                 type="button"
@@ -510,12 +510,28 @@ function ExercisePanel({
 
 // ── LogItem ────────────────────────────────────────────────────────────────
 
-function LogItem({ log, onTogglePR, onDelete }: {
+function LogItem({ log, onTogglePR, onDelete, onEdit }: {
     log: WorkoutLog
     onTogglePR: (id: string, current: boolean) => void
     onDelete: (id: string) => void
+    onEdit: (id: string, data: Partial<WorkoutLog>) => Promise<void>
 }) {
     const [expanded, setExpanded] = useState(false)
+    const [editing, setEditing] = useState(false)
+    const [saving, setSaving] = useState(false)
+
+    // Edit form state — initialised from the log when edit mode opens
+    const [editName, setEditName] = useState(log.workout)
+    const [editDuration, setEditDuration] = useState(String(log.duration ?? ""))
+    const [editNotes, setEditNotes] = useState(log.notes ?? "")
+    const [editExercises, setEditExercises] = useState<ExerciseEntry[]>(() =>
+        (log.exercises ?? []).map(ex => ({
+            uid: uid(),
+            name: ex.name,
+            sets: ex.sets.map(s => ({ weight: String(s.weight), reps: String(s.reps), isPR: s.isPR })),
+        }))
+    )
+
     const cat = detectCategory(log.workout)
     const catStyle = cat === "strength"
         ? { label: "Strength", color: "bg-violet-500/15 text-violet-600 dark:text-violet-400" }
@@ -523,6 +539,47 @@ function LogItem({ log, onTogglePR, onDelete }: {
             ? { label: "Cardio", color: "bg-sky-500/15 text-sky-600 dark:text-sky-400" }
             : { label: "Training", color: "bg-primary/10 text-primary" }
     const hasExercises = !!(log.exercises && log.exercises.length > 0)
+    const editCat = detectCategory(editName)
+
+    const openEdit = () => {
+        setEditName(log.workout)
+        setEditDuration(String(log.duration ?? ""))
+        setEditNotes(log.notes ?? "")
+        setEditExercises(
+            (log.exercises ?? []).map(ex => ({
+                uid: uid(),
+                name: ex.name,
+                sets: ex.sets.map(s => ({ weight: String(s.weight), reps: String(s.reps), isPR: s.isPR })),
+            }))
+        )
+        setEditing(true)
+        setExpanded(false)
+    }
+
+    const saveEdit = async () => {
+        setSaving(true)
+        const payload: Partial<WorkoutLog> = { workout: editName.trim() || log.workout }
+        if (editCat === "strength" || hasExercises) {
+            const filled = editExercises
+                .filter(ex => ex.name.trim())
+                .map(ex => ({
+                    name: ex.name.trim(),
+                    sets: ex.sets
+                        .filter(s => s.reps || s.weight)
+                        .map(s => ({ weight: parseFloat(s.weight) || 0, reps: parseInt(s.reps) || 0, isPR: s.isPR })),
+                }))
+                .filter(ex => ex.sets.length > 0)
+            if (filled.length > 0) payload.exercises = filled as ExerciseData[]
+        }
+        if (editCat === "cardio" || log.duration != null) {
+            const d = parseInt(editDuration)
+            payload.duration = isNaN(d) ? null : d
+            payload.notes = editNotes.trim() || null
+        }
+        await onEdit(log.id, payload)
+        setSaving(false)
+        setEditing(false)
+    }
 
     return (
         <motion.div
@@ -531,47 +588,194 @@ function LogItem({ log, onTogglePR, onDelete }: {
             exit={{ opacity: 0, height: 0, marginBottom: 0 }}
             className="rounded-xl bg-muted/30 hover:bg-muted/40 transition-colors overflow-hidden"
         >
-            <div className="flex items-center justify-between px-3 py-2.5">
-                <div className="flex items-start gap-3 min-w-0">
-                    <Dumbbell className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{log.workout}</p>
-                        <div className="flex items-center gap-2">
-                            <p className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM dd, yyyy")}</p>
-                            {log.duration && (
-                                <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                    <Clock className="h-2.5 w-2.5" />{log.duration}m
-                                </span>
-                            )}
+            {/* ── View mode header ── */}
+            {!editing && (
+                <div className="flex items-center justify-between px-3 py-2.5">
+                    <div className="flex items-start gap-3 min-w-0">
+                        <Dumbbell className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{log.workout}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground">{format(new Date(log.date), "MMM dd, yyyy")}</p>
+                                {log.duration && (
+                                    <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                        <Clock className="h-2.5 w-2.5" />{log.duration}m
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 ml-3">
-                    {log.isPR && (
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                            <Trophy className="h-3 w-3" /> PR
-                        </span>
-                    )}
-                    <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", catStyle.color)}>{catStyle.label}</span>
-                    {hasExercises && (
-                        <button onClick={() => setExpanded(v => !v)}
-                            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded">
-                            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+                    <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                        {log.isPR && (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                                <Trophy className="h-3 w-3" /> PR
+                            </span>
+                        )}
+                        <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", catStyle.color)}>{catStyle.label}</span>
+                        {hasExercises && (
+                            <button onClick={() => setExpanded(v => !v)}
+                                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded">
+                                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+                            </button>
+                        )}
+                        <button onClick={openEdit}
+                            className="text-muted-foreground/40 hover:text-primary transition-colors p-2.5 sm:p-1 rounded"
+                            title="Edit workout">
+                            <Pencil className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                         </button>
-                    )}
-                    <button onClick={() => onTogglePR(log.id, log.isPR)}
-                        className="text-muted-foreground/40 hover:text-amber-500 transition-colors p-2.5 sm:p-1 rounded">
-                        <Trophy className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-                    </button>
-                    <button onClick={() => onDelete(log.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-2.5 sm:p-1 rounded">
-                        <X className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    </button>
+                        <button onClick={() => onTogglePR(log.id, log.isPR)}
+                            className="text-muted-foreground/40 hover:text-amber-500 transition-colors p-2.5 sm:p-1 rounded">
+                            <Trophy className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                        </button>
+                        <button onClick={() => onDelete(log.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors p-2.5 sm:p-1 rounded">
+                            <X className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
+            {/* ── Edit mode ── */}
             <AnimatePresence>
-                {expanded && hasExercises && (
+                {editing && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="px-3 py-3 space-y-3 border-b border-border/20"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Pencil className="h-3.5 w-3.5 text-primary/60 shrink-0" />
+                            <span className="text-xs font-medium text-foreground/70">Edit workout</span>
+                        </div>
+
+                        {/* Session name */}
+                        <Input
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                            placeholder="Session name"
+                            className="h-8 text-sm"
+                        />
+
+                        {/* Exercises (if this log has them) */}
+                        {(hasExercises || editCat === "strength") && (
+                            <div className="rounded-lg border border-border/30 bg-card/30 p-2.5">
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Exercises</p>
+                                <div className="space-y-2">
+                                    {editExercises.map((ex, exIdx) => (
+                                        <div key={ex.uid} className="space-y-1.5">
+                                            <div className="flex items-center gap-2">
+                                                <Input
+                                                    value={ex.name}
+                                                    onChange={e => setEditExercises(prev => prev.map((p, i) => i === exIdx ? { ...p, name: e.target.value } : p))}
+                                                    placeholder="Exercise name"
+                                                    className="h-7 text-xs flex-1"
+                                                />
+                                                <button type="button"
+                                                    onClick={() => setEditExercises(prev => prev.filter((_, i) => i !== exIdx))}
+                                                    className="text-muted-foreground/40 hover:text-destructive p-1 rounded">
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                            <div className="space-y-1 pl-2">
+                                                {ex.sets.map((s, setIdx) => (
+                                                    <div key={setIdx} className="flex items-center gap-1.5">
+                                                        <span className="text-[10px] text-muted-foreground w-4">{setIdx + 1}</span>
+                                                        <Input
+                                                            type="number"
+                                                            inputMode="decimal"
+                                                            value={s.weight}
+                                                            onChange={e => setEditExercises(prev => prev.map((p, i) =>
+                                                                i !== exIdx ? p : { ...p, sets: p.sets.map((ss, j) => j === setIdx ? { ...ss, weight: e.target.value } : ss) }
+                                                            ))}
+                                                            placeholder="lbs"
+                                                            className="h-7 w-16 text-xs text-foreground text-center"
+                                                        />
+                                                        <span className="text-[10px] text-muted-foreground">×</span>
+                                                        <Input
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            value={s.reps}
+                                                            onChange={e => setEditExercises(prev => prev.map((p, i) =>
+                                                                i !== exIdx ? p : { ...p, sets: p.sets.map((ss, j) => j === setIdx ? { ...ss, reps: e.target.value } : ss) }
+                                                            ))}
+                                                            placeholder="reps"
+                                                            className="h-7 w-16 text-xs text-foreground text-center"
+                                                        />
+                                                        <button type="button"
+                                                            onClick={() => setEditExercises(prev => prev.map((p, i) => {
+                                                                if (i !== exIdx) return p
+                                                                const sets = p.sets.filter((_, j) => j !== setIdx)
+                                                                return { ...p, sets: sets.length ? sets : [emptySet()] }
+                                                            }))}
+                                                            className="text-muted-foreground/40 hover:text-destructive p-1 rounded">
+                                                            <Minus className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                <button type="button"
+                                                    onClick={() => setEditExercises(prev => prev.map((p, i) =>
+                                                        i !== exIdx ? p : { ...p, sets: [...p.sets, emptySet()] }
+                                                    ))}
+                                                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground mt-0.5">
+                                                    <Plus className="h-2.5 w-2.5" /> set
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button type="button"
+                                        onClick={() => setEditExercises(prev => [...prev, emptyExercise()])}
+                                        className="flex items-center gap-1 text-xs text-primary/70 hover:text-primary mt-1">
+                                        <Plus className="h-3 w-3" /> Add exercise
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Duration + notes (if this log has them or is cardio) */}
+                        {(log.duration != null || log.notes || editCat === "cardio") && (
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="text-[10px] text-muted-foreground mb-1 block">Duration (min)</label>
+                                    <Input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={editDuration}
+                                        onChange={e => setEditDuration(e.target.value)}
+                                        placeholder="e.g. 45"
+                                        className="h-7 text-xs text-foreground"
+                                    />
+                                </div>
+                                <div className="flex-[2]">
+                                    <label className="text-[10px] text-muted-foreground mb-1 block">Notes</label>
+                                    <Input
+                                        value={editNotes}
+                                        onChange={e => setEditNotes(e.target.value)}
+                                        placeholder="optional"
+                                        className="h-7 text-xs"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-2 justify-end pt-1">
+                            <button type="button" onClick={() => setEditing(false)}
+                                className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="button" onClick={saveEdit} disabled={saving}
+                                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">
+                                <Check className="h-3 w-3" />
+                                {saving ? "Saving…" : "Save"}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── Exercise expand (view mode only) ── */}
+            <AnimatePresence>
+                {expanded && hasExercises && !editing && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
@@ -633,15 +837,6 @@ export function WorkoutTracker({ onDataChange }: WorkoutTrackerProps) {
         const timer = setTimeout(() => {
             const cat = detectCategory(workout)
             setDetectedCategory(cat)
-            if (cat === "strength" && workout.trim()) {
-                setExercises(prev => {
-                    // Only pre-fill if the panel just opened (single empty entry)
-                    if (prev.length === 1 && !prev[0].name.trim()) {
-                        return [{ ...prev[0], name: workout.trim() }]
-                    }
-                    return prev
-                })
-            }
         }, 400)
         return () => clearTimeout(timer)
     }, [workout, manualCategory])
@@ -812,6 +1007,18 @@ export function WorkoutTracker({ onDataChange }: WorkoutTrackerProps) {
         } catch { setError("Failed to delete") }
     }
 
+    const editLog = async (id: string, data: Partial<WorkoutLog>) => {
+        setData(prev => prev.map(l => l.id === id ? { ...l, ...data } : l))
+        try {
+            await fetch("/api/fitness/workout", {
+                method: "PUT",
+                body: JSON.stringify({ id, ...data }),
+                headers: { "Content-Type": "application/json" },
+            })
+            fetchData()
+        } catch { fetchData() }
+    }
+
     const streak = computeStreak(data)
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -859,12 +1066,12 @@ export function WorkoutTracker({ onDataChange }: WorkoutTrackerProps) {
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Workout name */}
                 <div>
-                    <label htmlFor="workout" className="text-xs text-muted-foreground mb-1.5 block">What did you do?</label>
+                    <label htmlFor="workout" className="text-xs text-muted-foreground mb-1.5 block">Session name</label>
                     <Input
                         id="workout"
                         value={workout}
                         onChange={e => setWorkout(e.target.value)}
-                        placeholder="e.g. Bench Press, Morning Run, Basketball..."
+                        placeholder="e.g. Push Day, Morning Run, Upper Body..."
                         className="h-9"
                     />
                 </div>
@@ -884,13 +1091,6 @@ export function WorkoutTracker({ onDataChange }: WorkoutTrackerProps) {
                                 onClick={() => {
                                     const next = effectiveCategory === "strength" ? null : "strength"
                                     setManualCategory(next)
-                                    if (next === "strength" && workout.trim()) {
-                                        setExercises(prev =>
-                                            prev.length === 1 && !prev[0].name.trim()
-                                                ? [{ ...prev[0], name: workout.trim() }]
-                                                : prev
-                                        )
-                                    }
                                 }}
                                 className={cn(
                                     "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ring-1 transition-all",
@@ -1077,6 +1277,7 @@ export function WorkoutTracker({ onDataChange }: WorkoutTrackerProps) {
                                     log={log}
                                     onTogglePR={togglePR}
                                     onDelete={deleteLog}
+                                    onEdit={editLog}
                                 />
                             ))}
                         </AnimatePresence>

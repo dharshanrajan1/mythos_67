@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { DndContext, DragOverlay, closestCorners, KeyboardSensor, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, FileDown, Eraser, ChevronLeft, ChevronRight, ChevronsRight, CalendarDays } from "lucide-react"
+import { Plus, FileDown, Eraser, ChevronLeft, ChevronRight, ChevronsRight, CalendarDays, Clock, X } from "lucide-react"
 import { TaskItem } from "./TaskItem"
 import { KanbanCard } from "./KanbanCard"
 import { KanbanColumn } from "./KanbanColumn"
@@ -14,6 +14,7 @@ import { jsPDF } from "jspdf"
 import html2canvas from "html2canvas"
 import { cn } from "@/lib/utils"
 import { signIn } from "next-auth/react"
+import * as chrono from "chrono-node"
 
 export interface GCalEvent {
     id: string
@@ -33,6 +34,15 @@ export interface Task {
     priority: string
     weekOf?: string | null
     notes?: string
+    startTime?: string | null
+    endTime?: string | null
+}
+
+interface DetectedTime {
+    startTime: string   // "HH:MM" 24h
+    endTime: string     // "HH:MM" 24h
+    label: string       // human-readable, e.g. "3:00 PM"
+    strippedContent: string  // content with the time phrase removed
 }
 
 export type Priority = 'HIGH' | 'MEDIUM' | 'LOW'
@@ -102,6 +112,42 @@ function shiftWeek(monday: Date, delta: number): Date {
     return next
 }
 
+/** Parse a time from a task string. Returns null if no explicit time found. */
+function parseTaskTime(text: string): DetectedTime | null {
+    const results = chrono.parse(text, new Date(), { forwardDate: true })
+    if (!results.length) return null
+    const result = results[0]
+    // Only fire if the hour was explicitly given (not just a date like "tomorrow")
+    if (!result.start.isCertain("hour")) return null
+
+    const h = result.start.get("hour") ?? 0
+    const m = result.start.get("minute") ?? 0
+    const startTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+
+    // End time: from parsed end, or default +1h
+    let endTime: string
+    if (result.end && result.end.isCertain("hour")) {
+        const eh = result.end.get("hour") ?? h + 1
+        const em = result.end.get("minute") ?? 0
+        endTime = `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`
+    } else {
+        const endH = Math.min(h + 1, 23)
+        endTime = `${String(endH).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+    }
+
+    // Human-readable label
+    const date = new Date()
+    date.setHours(h, m, 0, 0)
+    const label = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+
+    // Strip the matched text from the content
+    const strippedContent = (text.slice(0, result.index) + text.slice(result.index + result.text.length))
+        .replace(/\s{2,}/g, " ")
+        .trim()
+
+    return { startTime, endTime, label, strippedContent }
+}
+
 export function KanbanBoard() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [newTask, setNewTask] = useState("")
@@ -113,6 +159,9 @@ export function KanbanBoard() {
     const [gcalConnected, setGcalConnected] = useState<boolean | null>(null)
     const [isExporting, setIsExporting] = useState(false)
     const [activeId, setActiveId] = useState<string | null>(null)
+    const [detectedTime, setDetectedTime] = useState<DetectedTime | null>(null)
+    const [dismissedTime, setDismissedTime] = useState(false)
+    const detectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     const weekDates = getWeekDates(currentWeekMonday)
     const todayDay = getTodayDayName()
@@ -157,27 +206,69 @@ export function KanbanBoard() {
             .catch(() => setGcalConnected(false))
     }, [currentWeekMonday])
 
+    // Debounced NLP time detection on task input
+    useEffect(() => {
+        if (dismissedTime) return
+        if (detectTimerRef.current) clearTimeout(detectTimerRef.current)
+        detectTimerRef.current = setTimeout(() => {
+            setDetectedTime(newTask.trim() ? parseTaskTime(newTask) : null)
+        }, 300)
+        return () => { if (detectTimerRef.current) clearTimeout(detectTimerRef.current) }
+    }, [newTask, dismissedTime])
+
+    // Reset dismissal when input is cleared
+    useEffect(() => {
+        if (!newTask.trim()) {
+            setDetectedTime(null)
+            setDismissedTime(false)
+        }
+    }, [newTask])
+
     const addTask = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newTask) return
         setError("")
+
+        // Use stripped content if a time was detected, otherwise the raw input
+        const finalContent = detectedTime ? detectedTime.strippedContent || newTask.trim() : newTask.trim()
+        const startTime = detectedTime?.startTime ?? null
+        const endTime   = detectedTime?.endTime   ?? null
+
         try {
             const weekOf = formatWeekOfKey(currentWeekMonday)
             const res = await fetch("/api/planning", {
                 method: "POST",
-                body: JSON.stringify({ content: newTask, status: "NOT_STARTED", day: selectedDay, priority: selectedPriority, weekOf }),
+                body: JSON.stringify({
+                    content: finalContent,
+                    status: "NOT_STARTED",
+                    day: selectedDay,
+                    priority: selectedPriority,
+                    weekOf,
+                    startTime,
+                    endTime,
+                }),
                 headers: { "Content-Type": "application/json" },
             })
             if (res.ok) {
                 const createdTask = await res.json()
                 setNewTask("")
+                setDetectedTime(null)
+                setDismissedTime(false)
                 fetchTasks()
 
                 // Sync to Google Calendar (fire and forget)
-                const weekOf = formatWeekOfKey(currentWeekMonday)
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
                 fetch("/api/planning/sync", {
                     method: "POST",
-                    body: JSON.stringify({ taskId: createdTask.id, day: selectedDay, content: newTask, weekOf }),
+                    body: JSON.stringify({
+                        taskId: createdTask.id,
+                        day: selectedDay,
+                        content: finalContent,
+                        weekOf,
+                        startTime,
+                        endTime,
+                        timeZone: tz,
+                    }),
                     headers: { "Content-Type": "application/json" }
                 }).catch(() => {})
             } else {
@@ -192,7 +283,8 @@ export function KanbanBoard() {
 
     const updateTaskDay = async (id: string, day: string) => {
         const previousTasks = [...tasks]
-        const taskContent = tasks.find(t => t.id === id)?.content || "Task"
+        const task = tasks.find(t => t.id === id)
+        const taskContent = task?.content || "Task"
         setTasks(tasks.map(t => t.id === id ? { ...t, day } : t))
 
         try {
@@ -204,9 +296,18 @@ export function KanbanBoard() {
             })
             if (!res.ok) throw new Error("Failed to update")
 
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
             fetch("/api/planning/sync", {
                 method: "POST",
-                body: JSON.stringify({ taskId: id, day, content: taskContent, weekOf }),
+                body: JSON.stringify({
+                    taskId: id,
+                    day,
+                    content: taskContent,
+                    weekOf,
+                    startTime: task?.startTime ?? null,
+                    endTime: task?.endTime ?? null,
+                    timeZone: tz,
+                }),
                 headers: { "Content-Type": "application/json" }
             }).catch(() => {})
         } catch (error) {
@@ -460,6 +561,25 @@ export function KanbanBoard() {
                         </Button>
                     </div>
                 </div>
+
+                {/* NLP time detection pill */}
+                {detectedTime && (
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/25 text-sky-500">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            <span className="text-xs font-medium">{detectedTime.label}</span>
+                            <button
+                                type="button"
+                                onClick={() => { setDetectedTime(null); setDismissedTime(true) }}
+                                className="ml-0.5 hover:text-sky-300 transition-colors"
+                                title="Remove time"
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">Detected · will sync as timed event</span>
+                    </div>
+                )}
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
 

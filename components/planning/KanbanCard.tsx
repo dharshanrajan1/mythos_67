@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Task, Priority, PRIORITY_CONFIG } from "./KanbanBoard"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trash, GripVertical, CheckCircle2 } from "lucide-react"
+import { Trash, GripVertical, CheckCircle2, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface KanbanCardProps {
@@ -113,6 +113,16 @@ export function KanbanCard({ task, onDelete, onStatusChange, onPriorityChange, o
                                     <Trash className="h-3 w-3" />
                                 </Button>
                             </div>
+
+                            {/* Time badge (if timed event) */}
+                            {task.startTime && (
+                                <div className="flex items-center gap-1 text-[10px] text-sky-500 bg-sky-500/10 px-1.5 py-0.5 rounded-full w-fit">
+                                    <Clock className="h-2.5 w-2.5 shrink-0" />
+                                    <span className="font-medium">
+                                        {new Date(`2000-01-01T${task.startTime}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Bottom row: complete + priority */}
                             <div className="flex items-center gap-1.5 mt-auto">

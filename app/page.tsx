@@ -15,7 +15,6 @@ import { DailyQuote } from "@/components/home/DailyQuote"
 import { UnifiedActivityFeed, ActivityItem } from "@/components/home/UnifiedActivityFeed"
 import { WeeklyRecap, WeeklyRecapData } from "@/components/home/WeeklyRecap"
 import { CountdownWidget } from "@/components/home/CountdownWidget"
-import { GoogleCalendarWidget } from "@/components/home/GoogleCalendarWidget"
 import Image from "next/image"
 
 const quickActions = [
@@ -249,10 +248,9 @@ export default async function Home() {
           </Card>
         </div>
 
-        {/* Right column: Focus Widget + Calendar + Countdowns */}
+        {/* Right column: Focus Widget + Countdowns */}
         <div className="md:col-span-1 flex flex-col gap-5">
           <FocusWidget initialTasks={todaysTasks} today={today} />
-          <GoogleCalendarWidget />
           <CountdownWidget />
         </div>
       </div>

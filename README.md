@@ -1,38 +1,54 @@
-# Complex Site - Personal Tracker
+# Meridian — Personal Life OS
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+A full-stack personal productivity and life-tracking app. Single-user, self-hosted on Vercel with a Neon PostgreSQL database.
 
-## Getting Started
+## Stack
 
-First, run the development server:
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router) + TypeScript 5 |
+| Styling | Tailwind CSS 4 + Framer Motion |
+| Auth | NextAuth v4 (JWT + PrismaAdapter) |
+| ORM | Prisma 6 |
+| Database | Neon PostgreSQL (prod) |
+| Storage | Vercel Blob (progress photos) |
+| PWA | Serwist 9 (disabled in dev) |
+| Icons | Lucide React |
+| Drag & Drop | @dnd-kit |
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # fill in vars
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build & Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build   # prisma generate + db push + webpack build (4 GB memory)
+npm run start   # production
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Deployed on Vercel. Build uses explicit webpack (not Turbopack) for stability. `prisma db push --accept-data-loss` runs non-blocking at build time.
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+```env
+DATABASE_POSTGRES_PRISMA_URL          # Neon pooled connection
+DATABASE_POSTGRES_URL_NON_POOLING     # Neon direct connection (migrations)
+NEXTAUTH_SECRET                       # random string
+NEXTAUTH_URL                          # https://your-domain.com
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+BLOB_READ_WRITE_TOKEN                 # Vercel Blob
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Key Docs
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — deep technical guide (components, API, data flow)
+- [`CLAUDE.md`](./CLAUDE.md) — AI assistant context
+- [`GOOGLE_SETUP.md`](./GOOGLE_SETUP.md) — Google OAuth + Calendar setup
+- [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md) — common issues
+- [`FITNESS_ROADMAP.md`](./FITNESS_ROADMAP.md) — fitness feature backlog

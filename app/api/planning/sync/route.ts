@@ -23,6 +23,13 @@ function taskDateString(day: string, weekOf?: string | null): string {
     return date.toISOString().split("T")[0] // YYYY-MM-DD
 }
 
+/** Add 1 hour to a "HH:MM" string, clamped to 23:59 */
+function addOneHour(time: string): string {
+    const [h, m] = time.split(":").map(Number)
+    const newH = Math.min(h + 1, 23)
+    return `${String(newH).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+}
+
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -36,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { taskId, day, content, weekOf } = await req.json()
+        const { taskId, day, content, weekOf, startTime, endTime, timeZone } = await req.json()
 
         // Look up existing task to check for a prior GCal event
         const task = await prisma.task.findUnique({
@@ -47,11 +54,25 @@ export async function POST(req: Request) {
         const dateString = taskDateString(day, weekOf)
         const calendar = google.calendar({ version: "v3", auth })
 
-        const eventBody = {
-            summary: content,
-            description: `Synced from Meridian · Task ID: ${taskId}`,
-            start: { date: dateString },
-            end:   { date: dateString },
+        // Build the event body — timed vs all-day
+        const tz = timeZone || "America/New_York"
+        let eventBody: object
+
+        if (startTime) {
+            const resolvedEnd = endTime || addOneHour(startTime)
+            eventBody = {
+                summary: content,
+                description: `Synced from Meridian · Task ID: ${taskId}`,
+                start: { dateTime: `${dateString}T${startTime}:00`, timeZone: tz },
+                end:   { dateTime: `${dateString}T${resolvedEnd}:00`, timeZone: tz },
+            }
+        } else {
+            eventBody = {
+                summary: content,
+                description: `Synced from Meridian · Task ID: ${taskId}`,
+                start: { date: dateString },
+                end:   { date: dateString },
+            }
         }
 
         let eventId: string | null | undefined = task?.gcalEventId

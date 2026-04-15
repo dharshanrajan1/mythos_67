@@ -18,7 +18,7 @@ function formatEventTime(start: string | null | undefined, isAllDay: boolean): s
     if (!start) return ""
     if (isAllDay) return "All day"
     try {
-        const d = parseISO(start)
+        const d = new Date(start)
         if (!isValid(d)) return ""
         return format(d, "h:mm a")
     } catch {
@@ -26,11 +26,10 @@ function formatEventTime(start: string | null | undefined, isAllDay: boolean): s
     }
 }
 
-// Maps hour-of-day to a subtle color accent
 function accentForHour(start: string | null | undefined, isAllDay: boolean): string {
     if (isAllDay || !start) return "bg-primary/40"
     try {
-        const hour = parseISO(start).getHours()
+        const hour = new Date(start).getHours()
         if (hour < 9)  return "bg-violet-400"
         if (hour < 12) return "bg-sky-400"
         if (hour < 17) return "bg-emerald-400"
@@ -42,14 +41,14 @@ function accentForHour(start: string | null | undefined, isAllDay: boolean): str
 
 export function GoogleCalendarWidget() {
     const [events,    setEvents]    = useState<CalEvent[]>([])
-    const [connected, setConnected] = useState<boolean | null>(null) // null = loading
+    const [connected, setConnected] = useState<boolean | null>(null)
     const [error,     setError]     = useState(false)
 
     useEffect(() => {
         const s = new Date()
-        s.setHours(0,0,0,0)
+        s.setHours(0, 0, 0, 0)
         const e = new Date()
-        e.setHours(23,59,59,999)
+        e.setHours(23, 59, 59, 999)
 
         fetch(`/api/calendar/today?timeMin=${s.toISOString()}&timeMax=${e.toISOString()}`)
             .then(r => r.json())

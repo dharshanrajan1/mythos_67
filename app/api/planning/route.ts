@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        const { content, status, day, notes, priority, weekOf } = body
+        const { content, status, day, notes, priority, weekOf, startTime, endTime } = body
 
         const task = await prisma.task.create({
             data: {
@@ -61,6 +61,8 @@ export async function POST(req: Request) {
                 priority: priority || "MEDIUM",
                 weekOf: weekOf || null,
                 notes: notes || "",
+                startTime: startTime || null,
+                endTime: endTime || null,
                 userId: session.user.id,
             },
         })
@@ -76,7 +78,7 @@ export async function PUT(req: Request) {
 
     try {
         const body = await req.json()
-        const { id, status, day, notes, priority, weekOf } = body
+        const { id, status, day, notes, priority, weekOf, startTime, endTime } = body
 
         const task = await prisma.task.update({
             where: { id, userId: session.user.id },
@@ -85,7 +87,9 @@ export async function PUT(req: Request) {
                 ...(day && { day }),
                 ...(notes !== undefined && { notes }),
                 ...(priority && { priority }),
-                ...(weekOf !== undefined && { weekOf })
+                ...(weekOf !== undefined && { weekOf }),
+                ...(startTime !== undefined && { startTime: startTime || null }),
+                ...(endTime !== undefined && { endTime: endTime || null }),
             },
         })
         return NextResponse.json(task)

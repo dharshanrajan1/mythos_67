@@ -103,6 +103,7 @@ NEXTAUTH_SECRET
 NEXTAUTH_URL
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
+TMDB_READ_ACCESS_TOKEN                # TMDB bearer token — required for movie/TV search
 ```
 
 ---
