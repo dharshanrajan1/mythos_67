@@ -1,30 +1,24 @@
+// Single source of truth for the schema lives in complex_website/prisma/schema.prisma.
+// This file must stay in sync with that file.
+// The only difference is the datasource — the iMessage service connects to the
+// same Neon database using DATABASE_POSTGRES_PRISMA_URL.
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Legacy deployments set DATABASE_URL. New merged deployments set DATABASE_POSTGRES_PRISMA_URL.
+  url      = env("DATABASE_POSTGRES_PRISMA_URL")
 }
 
-enum UserStatus {
-  ACTIVE
-  PAUSED
-}
+// ─── Nutrition enums ──────────────────────────────────────────────────────────
 
 enum GoalType {
   LOSE
   MAINTAIN
   GAIN
-}
-
-enum ThreadTransport {
-  SMS
-}
-
-enum MessageDirection {
-  INBOUND
-  OUTBOUND
 }
 
 enum MealEventType {
@@ -55,22 +49,191 @@ enum OnboardingStep {
   COMPLETE
 }
 
-model User {
-  id             String         @id @default(cuid())
-  phoneE164      String         @unique
-  timezone       String         @default("America/New_York")
-  status         UserStatus     @default(ACTIVE)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  profile        Profile?
-  goals          Goal[]
-  threads        Thread[]
-  mealEvents     MealEvent[]
-  dailyRollups   DailyRollup[]
-  coachMemory    CoachMemory?
-  corrections    Correction[]
-  onboarding     OnboardingSession?
+enum ThreadTransport {
+  SMS
 }
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+// ─── User (shared with Meridian web app) ─────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  phoneE164     String?   @unique
+  timezone      String    @default("America/New_York")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations (managed by Meridian)
+  accounts       Account[]
+  sessions       Session[]
+
+  // Meridian feature relations
+  diaryEntries   DiaryEntry[]
+  weightLogs     WeightLog[]
+  progressPhotos ProgressPhoto[]
+  noteBlocks     NoteBlock[]
+  tasks          Task[]
+  workoutLogs    WorkoutLog[]
+  countdowns     Countdown[]
+  mediaItems     MediaItem[]
+
+  // Nutrition / iMessage coach relations
+  nutritionProfile     Profile?
+  nutritionGoals       Goal[]
+  smsThreads           Thread[]
+  mealEvents           MealEvent[]
+  dailyRollups         DailyRollup[]
+  coachMemory          CoachMemory?
+  nutritionCorrections Correction[]
+  nutritionOnboarding  OnboardingSession?
+}
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Meridian feature models (iMessage service reads these for context) ───────
+
+model DiaryEntry {
+  id        String   @id @default(cuid())
+  date      DateTime
+  content   String
+  rating    String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model WeightLog {
+  id        String   @id @default(cuid())
+  date      DateTime
+  weight    Float
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model ProgressPhoto {
+  id        String   @id @default(cuid())
+  date      DateTime
+  url       String
+  caption   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model NoteBlock {
+  id        String   @id @default(cuid())
+  content   String
+  type      String   @default("text")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  content     String
+  notes       String?
+  status      String   @default("NOT_STARTED")
+  day         String   @default("Monday")
+  priority    String   @default("MEDIUM")
+  weekOf      String?
+  gcalEventId String?
+  startTime   String?
+  endTime     String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WorkoutLog {
+  id        String   @id @default(cuid())
+  date      DateTime
+  workout   String
+  isPR      Boolean  @default(false)
+  exercises Json?
+  duration  Int?
+  notes     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Countdown {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model MediaItem {
+  id         String   @id @default(cuid())
+  title      String
+  type       String
+  status     String   @default("WANT_TO")
+  rating     Int?
+  notes      String?
+  posterUrl  String?
+  externalId String?
+  year       Int?
+  author     String?
+  rank       Float?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── Nutrition & iMessage coach ───────────────────────────────────────────────
 
 model Profile {
   userId               String   @id
@@ -90,47 +253,47 @@ model Profile {
 }
 
 model Goal {
-  id              String    @id @default(cuid())
-  userId          String
-  goalType        GoalType
-  targetWeightKg  Float?
-  weeklyPaceKg    Float?
-  targetCalories  Int?
-  targetProteinG  Int?
-  targetCarbsG    Int?
-  targetFatG      Int?
-  active          Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  userId         String
+  goalType       GoalType
+  targetWeightKg Float?
+  weeklyPaceKg   Float?
+  targetCalories Int?
+  targetProteinG Int?
+  targetCarbsG   Int?
+  targetFatG     Int?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Thread {
-  id               String           @id @default(cuid())
+  id               String          @id @default(cuid())
   userId           String
   transport        ThreadTransport
   externalThreadId String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages         Message[]
 }
 
 model Message {
-  id                String            @id @default(cuid())
+  id                String           @id @default(cuid())
   threadId          String
   direction         MessageDirection
   provider          String
-  providerMessageId String?           @unique
+  providerMessageId String?          @unique
   bodyText          String?
-  mediaCount        Int               @default(0)
-  receivedAt        DateTime          @default(now())
+  mediaCount        Int              @default(0)
+  receivedAt        DateTime         @default(now())
   rawPayload        Json?
-  createdAt         DateTime          @default(now())
-  thread            Thread            @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  createdAt         DateTime         @default(now())
+  thread            Thread           @relation(fields: [threadId], references: [id], onDelete: Cascade)
   mediaAssets       MediaAsset[]
-  sourceMealEvents  MealEvent[]       @relation("SourceMessage")
-  clarificationFor  Clarification[]   @relation("ClarificationAnswer")
+  sourceMealEvents  MealEvent[]      @relation("SourceMessage")
+  clarificationFor  Clarification[]  @relation("ClarificationAnswer")
 }
 
 model MediaAsset {
@@ -146,100 +309,100 @@ model MediaAsset {
 }
 
 model MealEvent {
-  id               String         @id @default(cuid())
-  userId           String
-  sourceMessageId  String?
-  eventType        MealEventType
-  mealTime         DateTime?
-  loggingState     LoggingState   @default(PENDING)
-  confidenceScore  Float?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceMessage    Message?       @relation("SourceMessage", fields: [sourceMessageId], references: [id], onDelete: SetNull)
-  mealItems        MealItem[]
-  clarifications   Clarification[]
+  id              String        @id @default(cuid())
+  userId          String
+  sourceMessageId String?
+  eventType       MealEventType
+  mealTime        DateTime?
+  loggingState    LoggingState  @default(PENDING)
+  confidenceScore Float?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMessage   Message?      @relation("SourceMessage", fields: [sourceMessageId], references: [id], onDelete: SetNull)
+  mealItems       MealItem[]
+  clarifications  Clarification[]
 }
 
 model MealItem {
-  id                String      @id @default(cuid())
-  mealEventId       String
-  nameRaw           String
-  nameCanonical     String?
-  quantity          Float?
-  unit              String?
-  gramsEstimated    Float?
-  foodSource        FoodSource  @default(LLM_ESTIMATE)
-  foodSourceRef     String?
-  calories          Float?
-  proteinG          Float?
-  carbsG            Float?
-  fatG              Float?
-  fiberG            Float?
-  confidenceScore   Float?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  mealEvent         MealEvent   @relation(fields: [mealEventId], references: [id], onDelete: Cascade)
-  corrections       Correction[]
+  id              String     @id @default(cuid())
+  mealEventId     String
+  nameRaw         String
+  nameCanonical   String?
+  quantity        Float?
+  unit            String?
+  gramsEstimated  Float?
+  foodSource      FoodSource @default(LLM_ESTIMATE)
+  foodSourceRef   String?
+  calories        Float?
+  proteinG        Float?
+  carbsG          Float?
+  fatG            Float?
+  fiberG          Float?
+  confidenceScore Float?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  mealEvent       MealEvent  @relation(fields: [mealEventId], references: [id], onDelete: Cascade)
+  corrections     Correction[]
 }
 
 model Clarification {
-  id                String    @id @default(cuid())
-  mealEventId       String
-  question          String
-  answerMessageId   String?   @unique
-  resolvedAt        DateTime?
-  createdAt         DateTime  @default(now())
-  mealEvent         MealEvent @relation(fields: [mealEventId], references: [id], onDelete: Cascade)
-  answerMessage     Message?  @relation("ClarificationAnswer", fields: [answerMessageId], references: [id], onDelete: SetNull)
+  id              String    @id @default(cuid())
+  mealEventId     String
+  question        String
+  answerMessageId String?   @unique
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  mealEvent       MealEvent @relation(fields: [mealEventId], references: [id], onDelete: Cascade)
+  answerMessage   Message?  @relation("ClarificationAnswer", fields: [answerMessageId], references: [id], onDelete: SetNull)
 }
 
 model DailyRollup {
-  id            String   @id @default(cuid())
-  userId        String
-  dayDate       DateTime
-  calories      Float    @default(0)
-  proteinG      Float    @default(0)
-  carbsG        Float    @default(0)
-  fatG          Float    @default(0)
-  fiberG        Float    @default(0)
-  mealsLogged   Int      @default(0)
-  updatedAt     DateTime @updatedAt
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  userId      String
+  dayDate     DateTime
+  calories    Float    @default(0)
+  proteinG    Float    @default(0)
+  carbsG      Float    @default(0)
+  fatG        Float    @default(0)
+  fiberG      Float    @default(0)
+  mealsLogged Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dayDate])
 }
 
 model CoachMemory {
-  userId                String   @id
-  summary               String?
-  strictnessMode        String?
-  preferredCheckinTime  String?
-  lastWeekSummary       Json?
-  updatedAt             DateTime @updatedAt
-  createdAt             DateTime @default(now())
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String   @id
+  summary              String?
+  strictnessMode       String?
+  preferredCheckinTime String?
+  lastWeekSummary      Json?
+  updatedAt            DateTime @updatedAt
+  createdAt            DateTime @default(now())
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Correction {
-  id              String    @id @default(cuid())
-  userId          String
-  mealItemId      String?
-  correctionType  String
-  oldValue        Json?
-  newValue        Json?
-  createdAt       DateTime  @default(now())
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mealItem        MealItem? @relation(fields: [mealItemId], references: [id], onDelete: SetNull)
+  id             String    @id @default(cuid())
+  userId         String
+  mealItemId     String?
+  correctionType String
+  oldValue       Json?
+  newValue       Json?
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealItem       MealItem? @relation(fields: [mealItemId], references: [id], onDelete: SetNull)
 }
 
 model OnboardingSession {
-  userId       String         @id
-  currentStep  OnboardingStep @default(GOAL)
-  answers      Json?
-  completedAt  DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String         @id
+  currentStep OnboardingStep @default(GOAL)
+  answers     Json?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

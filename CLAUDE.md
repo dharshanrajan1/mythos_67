@@ -97,14 +97,21 @@ GET    /api/calendar/today        Today's GCal events
 ## Environment Variables
 
 ```env
-DATABASE_POSTGRES_PRISMA_URL          # Neon pooled connection
-DATABASE_POSTGRES_URL_NON_POOLING     # Neon direct connection
+DATABASE_POSTGRES_PRISMA_URL          # Neon pooled connection (shared with iMessage AI service)
+DATABASE_POSTGRES_URL_NON_POOLING     # Neon direct connection (migrations only)
 NEXTAUTH_SECRET
 NEXTAUTH_URL
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
 TMDB_READ_ACCESS_TOKEN                # TMDB bearer token — required for movie/TV search
+OPENAI_API_KEY                        # GPT meal parsing — required for nutrition features
+OPENAI_MODEL                          # default: gpt-4o-mini
+USDA_API_KEY                          # USDA FoodData Central
+FATSECRET_CLIENT_ID                   # FatSecret branded food search
+FATSECRET_CLIENT_SECRET
 ```
+
+The `imessage-ai` service uses the same `DATABASE_POSTGRES_PRISMA_URL` env var to connect to the same Neon database. Both apps share one Prisma schema (`prisma/schema.prisma` is the source of truth; `imessage-ai/prisma/schema.prisma` must stay in sync).
 
 ---
 

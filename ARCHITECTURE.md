@@ -127,7 +127,7 @@ Deep technical reference. Read this to get up to speed on how the app is structu
 All models cascade-delete on `User` deletion. IDs are CUIDs. Timestamps: `createdAt` + `updatedAt` where relevant.
 
 ### User
-Standard NextAuth fields + `password String?` for credentials auth.
+Standard NextAuth fields + `password String?` for credentials auth. Also carries `phoneE164 String? @unique` and `timezone String` for linking to the iMessage nutrition coach.
 
 ### Account / Session / VerificationToken
 Standard NextAuth adapter models. `Account` stores Google OAuth tokens (`access_token`, `refresh_token`, `expires_at`).
@@ -156,6 +156,8 @@ Standard NextAuth adapter models. `Account` stores Google OAuth tokens (`access_
 - `status`: `"NOT_STARTED" | "IN_PROGRESS" | "COMPLETED"`
 - `priority`: `"HIGH" | "MEDIUM" | "LOW"`
 - `gcalEventId String?` — Google Calendar event ID. Present when the task has been synced to GCal. On task delete, the linked GCal event is deleted first.
+- `startTime String?` — `"HH:MM"` 24h format. When present, task is a timed event. When absent, treated as an all-day task.
+- `endTime String?` — `"HH:MM"` 24h format. Defaults to `startTime + 1h` during GCal sync when omitted.
 
 ### NoteBlock
 - `type String` — `"text" | "link" | "idea" | "youtube"`
@@ -172,6 +174,31 @@ Standard NextAuth adapter models. `Account` stores Google OAuth tokens (`access_
 ### Countdown
 - `title String`, `date DateTime` — simple countdown events shown on the home dashboard.
 
+### Profile *(nutrition)*
+Nutrition profile linked 1:1 to User. Stores body stats: sex, birthYear, heightCm, startWeightKg/currentWeightKg, activityLevel, exerciseDaysPerWeek, dietaryPreferences/allergies (JSON arrays).
+
+### Goal *(nutrition)*
+Active macro targets: goalType (LOSE/MAINTAIN/GAIN), targetCalories, targetProteinG, targetCarbsG, targetFatG, weeklyPaceKg. Multiple goals per user; only `active: true` is used.
+
+### MealEvent / MealItem *(nutrition)*
+- `MealEvent` — one per meal log (type: MEAL_LOG/CORRECTION/DELETE, loggingState: PENDING/CONFIRMED/AUTO_LOGGED/NEEDS_CLARIFICATION, optional sourceMessageId linking back to the SMS that triggered it).
+- `MealItem` — individual food items within a meal. Stores raw and canonical name, quantity, grams estimate, macros (calories/proteinG/carbsG/fatG/fiberG), and foodSource (USDA/BRANDED/MANUAL/LLM_ESTIMATE).
+
+### DailyRollup *(nutrition)*
+Pre-aggregated daily macro totals. Unique constraint on `(userId, dayDate)`. Recomputed whenever a MealEvent is created, corrected, or deleted. Powers the nutrition dashboard without re-summing all MealItems.
+
+### CoachMemory *(nutrition)*
+1:1 with User. Stores the iMessage coach's running memory: summary of the user's history, strictnessMode, preferredCheckinTime, lastWeekSummary JSON.
+
+### Thread / Message / MediaAsset *(iMessage SMS)*
+Full SMS conversation history. Thread is per transport type (SMS). Message stores raw payload, direction (INBOUND/OUTBOUND), and links to MealEvents it triggered. MediaAsset stores image URLs from MMS.
+
+### OnboardingSession *(nutrition)*
+Tracks multi-step nutrition onboarding state (GOAL → BODY_STATS → ACTIVITY → DIET → COMPLETE) with answers JSON. Created when a new user first texts the coach.
+
+### Correction *(nutrition)*
+Audit log of macro corrections ("change chicken to 30g protein"). Stores oldValue/newValue JSON and links back to the MealItem that was corrected.
+
 ---
 
 ## API Routes
@@ -183,10 +210,10 @@ All routes authenticate via `getServerSession(authOptions)` and return 401 if no
 | `/api/register` | POST | Creates user with bcrypt-hashed password |
 | `/api/diary` | GET, POST | GET with `?date=YYYY-MM-DD` returns single entry; without returns all. POST upserts. |
 | `/api/planning` | GET, POST, PUT, DELETE | GET supports `?weekOf=` and `?day=`. DELETE supports `?id=` or `?all=true&weekOf=`. On DELETE by id, linked GCal event is deleted first. |
-| `/api/planning/sync` | POST | Pushes all tasks for a week to Google Calendar (creates/updates events). |
+| `/api/planning/sync` | POST | Pushes all tasks for a week to Google Calendar. Timed tasks (startTime set) create time-specific events; others create all-day events. |
 | `/api/planning/gcal` | GET | Returns today's Google Calendar events. |
 | `/api/fitness/weight` | GET, POST, DELETE | Weight log CRUD. |
-| `/api/fitness/workout` | GET, POST | Workout log. GET returns all logs desc. |
+| `/api/fitness/workout` | GET, POST, PUT, DELETE | Workout log CRUD. GET returns last 100 logs desc. PUT updates name/isPR/exercises/duration/notes. DELETE by `?id=`. |
 | `/api/media` | GET, POST, PATCH, DELETE | Full CRUD. PATCH used for rank reordering. |
 | `/api/countdowns` | GET, POST, DELETE | Countdown CRUD. |
 | `/api/mind-dump` | GET, POST, DELETE | Note block CRUD. POST auto-fetches titles for link/youtube types. |

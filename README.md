@@ -48,7 +48,10 @@ BLOB_READ_WRITE_TOKEN                 # Vercel Blob
 ## Key Docs
 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — deep technical guide (components, API, data flow)
-- [`CLAUDE.md`](./CLAUDE.md) — AI assistant context
+- [`API_REFERENCE.md`](./API_REFERENCE.md) — full REST API reference with request/response shapes
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — step-by-step Vercel + Neon deployment guide
+- [`USER_GUIDE.md`](./USER_GUIDE.md) — end-user feature documentation
 - [`GOOGLE_SETUP.md`](./GOOGLE_SETUP.md) — Google OAuth + Calendar setup
 - [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md) — common issues
 - [`FITNESS_ROADMAP.md`](./FITNESS_ROADMAP.md) — fitness feature backlog
+- [`CLAUDE.md`](./CLAUDE.md) — AI assistant context
