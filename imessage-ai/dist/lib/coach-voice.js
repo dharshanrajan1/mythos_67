@@ -1,0 +1,54 @@
+export function formatLoggedMealReply(input) {
+    const intro = pickIntro(input.proteinG);
+    const itemLines = input.items
+        .map((item) => `${shortenName(item.name)} ${Math.round(item.calories)} cal | ${Math.round(item.proteinG)}p ${Math.round(item.carbsG)}c ${Math.round(item.fatG)}f`)
+        .join("; ");
+    const mealText = `${intro} logged ${input.mealLabel}! ${itemLines}. total ${Math.round(input.calories)} cal | ${Math.round(input.proteinG)}p ${Math.round(input.carbsG)}c ${Math.round(input.fatG)}f.`;
+    if (input.targetCalories &&
+        typeof input.dayCalories === "number" &&
+        input.targetProteinG &&
+        typeof input.dayProteinG === "number") {
+        const caloriesLeft = Math.max(Math.round(input.targetCalories - input.dayCalories), 0);
+        const proteinLeft = Math.max(Math.round(input.targetProteinG - input.dayProteinG), 0);
+        return `${mealText} you’ve got about ${caloriesLeft} cal and ${proteinLeft}g protein left today.`;
+    }
+    return mealText;
+}
+export function formatClarificationReply(question) {
+    return normalizeCoachText(question);
+}
+export function formatProgressReply(parts) {
+    return normalizeCoachText(parts.join(" "));
+}
+export function normalizeCoachText(text) {
+    const normalized = text.trim().replace(/\s+/g, " ").toLowerCase();
+    return softenPunctuation(normalized);
+}
+function pickIntro(proteinG) {
+    if (proteinG >= 35) {
+        return "nice!";
+    }
+    if (proteinG >= 20) {
+        return "got it!";
+    }
+    return "cool!";
+}
+function shortenName(value) {
+    const trimmed = value.trim();
+    if (trimmed.length <= 32) {
+        return trimmed;
+    }
+    return `${trimmed.slice(0, 29)}...`;
+}
+function softenPunctuation(text) {
+    if (text.includes("!")) {
+        return text;
+    }
+    if (text.startsWith("hey, i’m sam")) {
+        return text;
+    }
+    if (text.startsWith("perfect") || text.startsWith("nice") || text.startsWith("got it") || text.startsWith("cool")) {
+        return text.replace(".", "!");
+    }
+    return text;
+}
