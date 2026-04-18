@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Book, Dumbbell, LayoutDashboard, CalendarDays, LogOut, Library, Plus } from "lucide-react"
+import { Home, Book, Dumbbell, LayoutDashboard, CalendarDays, LogOut, Library, Plus, Radio } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
 import { ThemeSwitcher } from "@/components/ThemeSwitcher"
@@ -14,6 +14,7 @@ const routes = [
     { label: "Home", href: "/", icon: Home },
     { label: "Journal", href: "/diary", icon: Book },
     { label: "Fitness", href: "/fitness", icon: Dumbbell },
+    { label: "Field Coach", href: "/correspondent", icon: Radio },
     { label: "Mind Dump", href: "/mind-dump", icon: LayoutDashboard },
     { label: "Planning", href: "/planning", icon: CalendarDays },
     { label: "Media", href: "/media", icon: Library },

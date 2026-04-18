@@ -11,12 +11,15 @@ const simulateInboundSchema = z.object({
   body: z.string().default(""),
   mediaCount: z.coerce.number().int().min(0).default(0),
   providerMessageId: z.string().optional(),
+  images: z.array(z.string()).default([]),
 });
 
 export async function registerSimulationRoutes(app: FastifyInstance) {
   app.post("/simulate/sms", async (request) => {
     const input = simulateInboundSchema.parse(request.body);
     const thread = await getOrCreateSmsThread(input.from);
+
+    const effectiveMediaCount = input.images.length > 0 ? input.images.length : input.mediaCount;
 
     const inbound = await prisma.message.create({
       data: {
@@ -25,17 +28,28 @@ export async function registerSimulationRoutes(app: FastifyInstance) {
         provider: "simulator",
         providerMessageId: input.providerMessageId ?? `sim_${Date.now()}`,
         bodyText: input.body,
-        mediaCount: input.mediaCount,
+        mediaCount: effectiveMediaCount,
         rawPayload: input,
       },
     });
+
+    for (const imageDataUrl of input.images) {
+      await prisma.mediaAsset.create({
+        data: {
+          messageId: inbound.id,
+          providerMediaUrl: "data:simulated",
+          mimeType: "image/jpeg",
+          storageKey: imageDataUrl,
+        },
+      });
+    }
 
     const outcome = await handleInboundMessage({
       userId: thread.userId,
       threadId: thread.id,
       messageId: inbound.id,
       text: input.body,
-      mediaCount: input.mediaCount,
+      mediaCount: effectiveMediaCount,
     });
 
     const outbound = await prisma.message.create({

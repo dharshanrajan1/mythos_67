@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { AlertCircle, Loader2 } from "lucide-react"
-import Image from "next/image"
 
 function LoginForm() {
     const router = useRouter()
@@ -66,13 +65,7 @@ function LoginForm() {
                                 className="relative w-16 h-16"
                             >
                                 <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                                <Image 
-                                    src="/logo.png" 
-                                    alt="Meridian Logo" 
-                                    fill
-                                    className="object-contain relative z-10 drop-shadow-[0_0_15px_rgba(124,58,237,0.5)]"
-                                    priority
-                                />
+                                <div className="relative z-10 w-full h-full flex items-center justify-center text-3xl">🧭</div>
                             </motion.div>
                         </div>
                         <CardTitle className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent text-center">Welcome Back</CardTitle>

@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { buildDailyProgressReply } from "./coaching.js";
+import { getContextCoachAdvice } from "./context-coach.js";
 import { maybeHandleCorrection } from "./corrections.js";
 import { maybeHandleDeletion } from "./deletions.js";
 import { getOnboardingState, handleOnboardingReply } from "./onboarding.js";
@@ -40,6 +41,12 @@ export async function handleInboundMessage(input: HandleInboundMessageInput) {
 
   if (normalized.includes("how am i doing") || normalized.includes("progress")) {
     const replyText = await buildDailyProgressReply(input.userId);
+    return { replyText };
+  }
+
+  const isContextQuery = /what should i|what'?s good|what can i (eat|get|order)|i'?m at |i am at |at the (airport|hotel|gas station|drive|terminal|lounge|rest stop)|at [a-z]+ (airport|hotel|diner|cafe|restaurant|station|bar)|what do you recommend/i.test(normalized);
+  if (isContextQuery) {
+    const replyText = await getContextCoachAdvice(input.userId, input.text);
     return { replyText };
   }
 

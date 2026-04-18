@@ -15,8 +15,6 @@ import { DailyQuote } from "@/components/home/DailyQuote"
 import { UnifiedActivityFeed, ActivityItem } from "@/components/home/UnifiedActivityFeed"
 import { WeeklyRecap, WeeklyRecapData } from "@/components/home/WeeklyRecap"
 import { CountdownWidget } from "@/components/home/CountdownWidget"
-import Image from "next/image"
-
 const quickActions = [
   {
     href: "/diary",
@@ -178,12 +176,7 @@ export default async function Home() {
           <div className="flex gap-4 items-start">
             <div className="relative w-16 h-16 shrink-0 mt-1">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-              <Image 
-                src="/logo.png" 
-                alt="Meridian Logo" 
-                fill
-                className="object-contain relative z-10 drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]"
-              />
+              <div className="relative z-10 w-full h-full flex items-center justify-center text-3xl">🧭</div>
             </div>
             <div className="space-y-1">
               <Greeting name={session.user?.name} />

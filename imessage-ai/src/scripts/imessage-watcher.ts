@@ -1,17 +1,36 @@
 import "dotenv/config";
-import { IMessageSDK } from "@photon-ai/imessage-kit";
+import { readFileSync, unlinkSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { IMessageSDK, isImageAttachment, downloadAttachment } from "@photon-ai/imessage-kit";
 
-const ALLOWED_NUMBER = "+17202794283";
-const RAILWAY_URL = process.env.RAILWAY_URL ?? "https://sam-production-ba56.up.railway.app";
+const ALLOWED_NUMBER = process.env.ALLOWED_NUMBER ?? "+17202794283";
+const AGENT_URL = process.env.AGENT_URL ?? process.env.RAILWAY_URL ?? "http://localhost:3001";
 
 const sdk = new IMessageSDK({ debug: true });
 
-async function handleMessage(text: string, sender: string) {
+async function handleMessage(text: string, sender: string, attachments: Awaited<ReturnType<typeof sdk.getMessages>>["messages"][0]["attachments"]) {
   try {
-    const response = await fetch(`${RAILWAY_URL}/simulate/sms`, {
+    const images: string[] = [];
+
+    for (const att of attachments ?? []) {
+      if (isImageAttachment(att)) {
+        const tmpPath = join(tmpdir(), `fieldcoach_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
+        try {
+          await downloadAttachment(att, tmpPath);
+          const b64 = readFileSync(tmpPath).toString("base64");
+          images.push(`data:image/jpeg;base64,${b64}`);
+          try { unlinkSync(tmpPath); } catch {}
+        } catch (e) {
+          console.error("[attachment] failed to read image:", e);
+        }
+      }
+    }
+
+    const response = await fetch(`${AGENT_URL}/simulate/sms`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: sender, body: text }),
+      body: JSON.stringify({ from: sender, body: text, images }),
     });
 
     const data = (await response.json()) as { replyText?: string };
@@ -26,7 +45,8 @@ async function handleMessage(text: string, sender: string) {
 
 await sdk.startWatching({
   onMessage: async (msg) => {
-    console.log(`[inbound] sender=${msg.sender} isFromMe=${msg.isFromMe} text=${msg.text}`);
+    const attachCount = msg.attachments?.length ?? 0;
+    console.log(`[inbound] sender=${msg.sender} isFromMe=${msg.isFromMe} text=${msg.text} attachments=${attachCount}`);
 
     if (msg.isFromMe) return;
 
@@ -38,14 +58,14 @@ await sdk.startWatching({
       return;
     }
 
-    await handleMessage(text, sender);
+    await handleMessage(text, sender, msg.attachments ?? []);
   },
   onError: (err) => {
     console.error("Watcher error:", err);
   },
 });
 
-console.log(`Sam is watching for messages from ${ALLOWED_NUMBER}...`);
+console.log(`Field Coach watching for messages from ${ALLOWED_NUMBER} → agent at ${AGENT_URL}`);
 setInterval(() => console.log("[heartbeat] still watching..."), 5000);
 
 process.on("SIGINT", async () => {

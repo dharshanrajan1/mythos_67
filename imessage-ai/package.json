@@ -15,6 +15,7 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "@fastify/formbody": "^8.0.2",
     "@fastify/sensible": "^6.0.3",
     "@photon-ai/imessage-kit": "^2.1.2",
