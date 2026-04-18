@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(grep -r \"media\\\\|Letterboxd\" \"C:\\\\Users\\\\grans\\\\Downloads\\\\mythos_67\" --include=\"*.prisma\" --include=\"*.json\" ! -path \"*/node_modules/*\")"
+    ]
+  }
+}
